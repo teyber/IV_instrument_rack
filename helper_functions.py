@@ -5,56 +5,11 @@
 import sys
 import time
 import visa
-
 import numpy as np
 import matplotlib.pyplot as plt
 
-from helper_functions import * 
-
-rm = visa.ResourceManager()
 
 
-
-max_voltage = 1.0 #Max voltage of 0.2 volts
-
-I_ramp_time = 0.1 #seconds
-I_ramp_mag = 1000 #amps
-peak_dwell_time = 0.2 #seconds
-
-
-
-
-def main():
-
-
-
-	init_agilent_psu()
-
-
-#Initialize instruments
-	nanovm = init_nanovm()
-	dvm = init_dvm()
-
-
-
-#Ask meters for readings
-	nanovm.write('ROUT:TERM FRON1')
-	nanovm.write('READ?')
-	v_nvm1 = float(nanovm.read())
-
-	nanovm.write('ROUT:TERM FRON2')
-	nanovm.write('READ?')
-	v_nvm2 = float(nanovm.read())
-
-	dvm.write(':READ?')
-	v_dvm = float(dvm.read())
-
-	print(v_nvm1)
-	print(v_nvm2)
-	print(v_dvm)
-
-
-	return
 
 
 
@@ -84,6 +39,7 @@ def init_nanovm():
 	time.sleep(0.1)
 
 	return nanovm
+
 
 
 
@@ -132,6 +88,9 @@ def init_agilent_psu():
 	agilent_psu = rm.open_resource("TCPIP::192.168.100.10::gpib0,7::INSTR")
 	agilent_psu.write('*IDN?')
 	print(agilent_psu.read())
+	agilent_psu.timeout = 100
+	agilent_psu.write_termination = '\n'
+	agilent_psu.read_termination = '\n'
 
 
 	agilent_psu.write("*RST")
@@ -141,11 +100,11 @@ def init_agilent_psu():
 	agilent_psu.write("VOLT:TRIG 5") #5 volts
 	agilent_psu.write("CURR:TRIG 0.1") #0.1 amps
 
-	time.sleep(2)
+	time.sleep(0.5)
 
 	agilent_psu.write("TRIG:SOUR BUS")
 
-	time.sleep(2)
+	time.sleep(0.5)
 
 	agilent_psu.write("INIT")
 
@@ -155,36 +114,49 @@ def init_agilent_psu():
 
 
 
-def do_not_run():
 
-	psu = rm.open_resource("TCPIP::192.168.100.10::gpib0,3::INSTR") #"TCPIP::192.168.100.1::1394::SOCKET"
-	psu.timeout = 100
-	psu.write_termination = '\n'
-	psu.read_termination = '\n'
 
-	psu.write("*IDN?")
-	print(psu.read())
+def init_sorenson_psu():
 
-	psu.write("*CLS")
+
+	max_voltage = 1.0 #Max voltage of 0.2 volts
+
+	I_ramp_time = 0.1 #seconds
+	I_ramp_mag = 1000 #amps
+	peak_dwell_time = 0.2 #seconds
+
+
+
+	sorenson_psu = rm.open_resource("TCPIP::192.168.100.10::gpib0,3::INSTR") #"TCPIP::192.168.100.1::1394::SOCKET"
+	sorenson_psu.timeout = 100
+	sorenson_psu.write_termination = '\n'
+	sorenson_psu.read_termination = '\n'
+
+	sorenson_psu.write("*IDN?")
+	print(sorenson_psu.read())
+
+	sorenson_psu.write("*CLS")
 	time.sleep(0.2)
-	psu.write("*RST")
+	sorenson_psu.write("*RST")
 	time.sleep(0.5)
 
-	psu.write('SOUR:VOLT ' + str(max_voltage))
+
+
+	sorenson_psu.write('SOUR:VOLT ' + str(max_voltage))
 	time.sleep(0.2)
 
-	psu.write('SOUR:CURR 0')
+	sorenson_psu.write('SOUR:CURR 0')
 	time.sleep(0.2)
 
 
 
 	#Tell PSU to ramp
-	psu.write('SOUR:CURR:RAMP:TRIG ' + str(I_ramp_mag) + ' ' + str(I_ramp_time))
+	sorenson_psu.write('SOUR:CURR:RAMP:TRIG ' + str(I_ramp_mag) + ' ' + str(I_ramp_time))
 	time.sleep(0.1)
-	psu.write('TRIG:RAMP')
+	sorenson_psu.write('TRIG:RAMP')
 
 	time.sleep(peak_dwell_time + I_ramp_time)
-	psu.write("SOUR:CURR 0")
+	sorenson_psu.write("SOUR:CURR 0")
 
 	time.sleep(0.1)
 
@@ -198,6 +170,3 @@ def do_not_run():
 
 
 
-
-
-if __name__ == "__main__": main()
