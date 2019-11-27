@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 #This function initiates the Agilent 34420A nanovolt meter
 #and gets is ready to start returning single readings.
 #Note - there are two channels. Must select channel before querying read
-def init_nanovm():
+def init_nanovm(rm, max_voltage, NPLC):
 
 	nanovm = rm.open_resource("TCPIP::192.168.100.10::gpib0,22::INSTR")
 	nanovm.write('*IDN?')
@@ -33,10 +33,10 @@ def init_nanovm():
 	nanovm.write("SENSE1:FUNC \'VOLTAGE:DC\'")
 	nanovm.write("SENSE2:FUNC \'VOLTAGE:DC\'")
 	time.sleep(0.1)
-	nanovm.write("SENSE1:VOLT:DC:range 0.01")
-	nanovm.write("SENSE2:VOLT:DC:range 0.01")
-	nanovm.write("SENSE1:VOLT:DC:NPLC 1.0")
-	nanovm.write("SENSE2:VOLT:DC:NPLC 1.0")
+	nanovm.write("SENSE1:VOLT:DC:range " + str(np.round(max_voltage, 4)))
+	nanovm.write("SENSE2:VOLT:DC:range " + str(np.round(max_voltage, 4)))
+	nanovm.write("SENSE1:VOLT:DC:NPLC " + str(np.round(NPLC, 3)))
+	nanovm.write("SENSE2:VOLT:DC:NPLC " + str(np.round(NPLC,3)))
 	time.sleep(0.1)
 
 	return nanovm
@@ -74,9 +74,7 @@ def get_nanovm(nanovm, ch_num):
 #This function initiates the Keithley 2010 multimeter
 #and gets is ready to start returning single readings
 #upon receiving a :READ? command
-def init_dvm():
-
-	max_shunt_voltage = 10
+def init_dvm(rm, max_voltage, NPLC):
 
 	dvm = rm.open_resource("TCPIP::192.168.100.10::gpib0,8::INSTR")
 	dvm.write('*IDN?')
@@ -89,8 +87,8 @@ def init_dvm():
 	time.sleep(0.1)
 	dvm.write(":SENS:FUNC \'VOLTAGE:DC\'")
 	time.sleep(0.1)
-	dvm.write(":SENS:VOLT:DC:range "+str(max_shunt_voltage))
-	dvm.write(":SENS:VOLT:DC:NPLC 1.0")
+	dvm.write(":SENS:VOLT:DC:range "+ str(np.round(max_voltage, 4))) 
+	dvm.write(":SENS:VOLT:DC:NPLC " + str(np.round(NPLC, 1)))
 	dvm.write(":TRIG:COUNT 1")
 	dvm.write(":SAMPLE:COUNT 1")
 	dvm.write(":TRIG:SOUR IMM")
@@ -100,13 +98,17 @@ def init_dvm():
 
 
 
-#Return voltage reading from keithley voltmeter
+#Get voltage reading from keithley voltmeter
+#Return both the raw voltage and calculated shunt resistance
 def get_dvm(dvm):
 
+	Rshunt = (50/1000)/1000 #1200A Sorenson PSU has 50 mV/1kA written on shunt resistor
 	dvm.write(':READ?')
 	v_dvm = float(dvm.read())
+	Isample = v_dvm/Rshunt
 
-	return v_dvm
+	return v_dvm, Isample
+
 
 
 #End Keithley 2010
@@ -123,7 +125,7 @@ def get_dvm(dvm):
 
 #This function initiates the Sorenson SGA 10/1200 power supply 
 #A maximum voltage is programmed
-def init_sorenson_psu(max_voltage):
+def init_sorenson_psu(rm, max_voltage):
 
 	sorenson_psu = rm.open_resource("TCPIP::192.168.100.10::gpib0,3::INSTR") #"TCPIP::192.168.100.1::1394::SOCKET"
 	sorenson_psu.timeout = 100
@@ -167,47 +169,6 @@ def ramp_sorenson_psu(sorenson_psu, I_ramp_time, I_ramp_mag):
 
 #END Sorenson PSU
 ##########################################################################################
-
-
-
-
-
-# ##########################################################################################
-# #Start Agilent PSU
-
-
-# #This function initiates the Agilent E3631A power supply
-# #Note - this is the SMALL power supply, not for superconducting samples!
-# def init_agilent_psu():
-
-# 	agilent_psu = rm.open_resource("TCPIP::192.168.100.10::gpib0,7::INSTR")
-# 	agilent_psu.write('*IDN?')
-# 	print(agilent_psu.read())
-# 	agilent_psu.timeout = 100
-# 	agilent_psu.write_termination = '\n'
-# 	agilent_psu.read_termination = '\n'
-
-
-# 	agilent_psu.write("*RST")
-# 	time.sleep(0.1)
-
-# 	agilent_psu.write("INST:SEL P6V")
-# 	agilent_psu.write("VOLT:TRIG 5") #5 volts
-# 	agilent_psu.write("CURR:TRIG 0.1") #0.1 amps
-
-# 	time.sleep(0.5)
-
-# 	agilent_psu.write("TRIG:SOUR BUS")
-
-# 	time.sleep(0.5)
-
-# 	agilent_psu.write("INIT")
-
-# 	return agilent_psu
-
-# #End Agilent PSU
-# ##########################################################################################
-
 
 
 

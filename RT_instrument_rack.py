@@ -3,6 +3,7 @@
 
 # import serial
 import sys
+import os
 import time
 import visa
 
@@ -10,46 +11,30 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from helper_functions import * 
-
-rm = visa.ResourceManager()
-
-
-
-max_voltage = 1.0 #Max voltage of 0.2 volts
-
-I_ramp_time = 0.1 #seconds
-I_ramp_mag = 1000 #amps
-peak_dwell_time = 0.2 #seconds
+from measurement_routines import * 
 
 
 
 
 def main():
 
-	test_comm()
-
-
+#Create a results folder
+	dir_name = create_results_folder(test_code_0='test_tape')
 
 
 #Initialize instruments
-	
-	nanovm = init_nanovm()
-	dvm = init_dvm()
-	sorenson = init_sorenson_psu(max_voltage=3)
+	rm = visa.ResourceManager()
+	nanovm = init_nanovm(rm, max_voltage = 0.01, NPLC = 1)
+	dvm = init_dvm(rm, max_voltage = 1, NPLC = 0.1)
+	sorenson = init_sorenson_psu(rm, max_voltage=3)
 
 
+#Run IV curve
+	run_IV_curve(nanovm, dvm, sorenson, dir_name, I_start=0, I_end=100, I_inc=5)
 
-#Ask meters for readings
-
-	print(get_nanovm(nanovm, ch_num = 1))
-	print(get_nanovm(nanovm, ch_num = 2))
-	print(get_dvm(dvm))
 
 
 	return
-
-
-
 
 
 
