@@ -167,6 +167,17 @@ def ramp_sorenson_psu(sorenson_psu, I_ramp_time, I_ramp_mag):
 	return
 
 
+#Go to 0 amps, disable PSU as much as possible
+def modify_sorenson_limits(sorenson_psu, max_I, max_V):
+
+	sorenson_psu.write('SOUR:CURR '+ str(max_I))
+	time.sleep(0.1)
+	sorenson_psu.write('SOUR:VOLT ' + str(max_V))
+	time.sleep(0.1)
+
+	return
+
+
 #END Sorenson PSU
 ##########################################################################################
 
