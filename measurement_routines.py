@@ -2,38 +2,69 @@
 
 
 # import serial
-import sys
 import os
 import time
 import visa
 import numpy as np
 import matplotlib.pyplot as plt
-
-from scipy.interpolate import interp1d
 from scipy.optimize import differential_evolution
 
 
-
+some_constant = 3
 
 
 ##########################################################################################
 #IC curve
 
-def run_IV_curve(nanovm, dvm, sorenson, dir_name, I_start, I_end, I_inc):
+def run_IV_curve(I_start, I_end, I_inc, test_code = 'test_tape'):
+
 
 	#IV parameters
+	V_sample_max = 1e-3 #Disable PSU if voltage exceeds this
 	t_dwell = 0.2 #200 milliseconds
-	V_sample_max = 1e-3 	
 
 
+
+	#Initialize instruments
+	rm = visa.ResourceManager()
+	nanovm = init_nanovm(rm, max_voltage = 0.01, NPLC = 1)
+	dvm = init_dvm(rm, max_voltage = 0.1, NPLC = 0.1)
+	sorenson = init_sorenson_psu(rm, max_voltage=3)
+
+
+	#Create folder if it doesn't exist
+	dir_name = 'Results\\' + test_code
+	if os.path.exists(dir_name):
+		print('Folder with test name already exists')
+		print('0 - return to main loop')		
+		print('1 - Continue')
+		folder_warning = input('What would you like to do?')
+
+		if folder_conflict == 1: continue
+		else: return
+
+	else:
+		os.makedirs(dir_name)
+
+
+	#Ask user to double check current range before proceeding
 	I_vec = np.arange(I_start, I_end + I_inc, I_inc)
-	if np.min(I_vec) < 0:
-		print('Error: current set point is less than 0')
-		return
+	print('Safety check')
+	print('Programmed current range [A]: ', np.min(I_vec), np.max(I_vec))
+	print('Programmed voltage threshold [V]: ', V_sample_max)
+	print('\n')
+	print('0 - return to main loop')		
+	print('1 - Continue with IV curve')
+	current_warning = input('What would you like to do?')
 
-	num_points = np.size(I_vec)
+	if current_warning == 1: 
+		print('Continuing with IV curve - systems will be energized')
+		continue
+
+	else: return
 
 	#Initialize vectors to be filled in IV curve
+	num_points = np.size(I_vec)
 	I_shunt = np.zeros(num_points)
 	Vsample_1 = np.zeros(num_points)
 	Vsample_2 = np.zeros(num_points)
@@ -61,7 +92,6 @@ def run_IV_curve(nanovm, dvm, sorenson, dir_name, I_start, I_end, I_inc):
 	fig = plt.figure(figsize=(8,6))
 	ax1 = fig.add_subplot(1, 1, 1)
 	plt.ion()
-
 	L1, = ax1.plot(I_shunt, Vsample_1, 'k', label = 'Ch1')
 	L2, = ax1.plot(I_shunt, Vsample_2, 'b', label = 'Ch2')
 
@@ -71,8 +101,8 @@ def run_IV_curve(nanovm, dvm, sorenson, dir_name, I_start, I_end, I_inc):
 	y_min = -5e-6
 	y_max = 100e-6
 
-	ax1.set_xlim([I_start-5, I_end+20])
-	ax1.set_ylim([-1e-6, 1e-3])
+	ax1.set_xlim([x_min, x_max])
+	ax1.set_ylim([y_min, y_max])
 	ax1.legend()
 
 	#Start IV curve
@@ -101,7 +131,7 @@ def run_IV_curve(nanovm, dvm, sorenson, dir_name, I_start, I_end, I_inc):
 			time.sleep(0.1)
 			break
 
-		#Plot curve, update y axis limits if necesarry
+		#Plot curve, update y axis limits if needed
 		if (np.max(Vsample_1) > y_max) or (np.max(Vsample_2) > y_max): 
 			y_max = np.max((np.max(Vsample_1), np.max(Vsample_2)))
 
@@ -118,17 +148,25 @@ def run_IV_curve(nanovm, dvm, sorenson, dir_name, I_start, I_end, I_inc):
 
 
 	plt.show()
-	plt.savefig('plot_IV_curve.pdf')
+	plt.savefig(dir_name + '\\' +'plot_IV_curve.pdf')
 	plt.close()
 
 
 	#Ramp down, do not collect voltages along way
 	time.sleep(0.1)
-	down_ramp_time = 5
+	down_ramp_time = 4
 	print('IV curve complete. Beginning ramp down for ' + str(down_ramp_time) + ' seconds')
 	ramp_sorenson_psu(sorenson_psu, I_ramp_time=down_ramp_time, I_ramp_mag=0)
 	time.sleep(down_ramp_time+1)
 	modify_sorenson_limits(sorenson_psu, max_I=0, max_V=0)
+
+
+#Analye IV curve with curve fit
+	print('Ch1 analysis')
+	offset_ch1, resistance_ch1, Ic_ch1, n_ch1 = curve_fit_IV(I_shunt, Vsample_1, Ic_guess=1000, V_criterion=1e-6)
+	
+	print('Ch2 analysis')
+	offset_ch2, resistance_ch2, Ic_ch2, n_ch2 = curve_fit_IV(I_shunt, Vsample_2, Ic_guess=1000, V_criterion=1e-6)
 
 
 	#save output
@@ -136,10 +174,14 @@ def run_IV_curve(nanovm, dvm, sorenson, dir_name, I_start, I_end, I_inc):
 	if os.path.exists(dir_name + '\\' + 'IV_curve_' + str(code_num)):
 		code_num += 1
 	else:
-		np.savetxt('IV_curve_' + str(code_num) + '.txt', np.vstack((time_array, I_shunt, Vsample_1, Vsample_2)))	
-	
+		np.savetxt(dir_name + '\\' +'IV_curve_' + str(code_num) + '.txt', np.vstack((time_array, I_shunt, Vsample_1, Vsample_2)))	
+		np.savetxt(dir_name + '\\' +'ch1_fit_' + str(code_num) + '.txt', [offset_ch1, resistance_ch1, Ic_ch1, n_ch1])	
+		np.savetxt(dir_name + '\\' +'ch2_fit_' + str(code_num) + '.txt', [offset_ch2, resistance_ch2, Ic_ch2, n_ch2])	
+
+
 
 	return time_array, I_shunt, Vsample_1, Vsample_2
+
 
 
 
@@ -192,17 +234,16 @@ def curve_fit_IV(I_meas, V_meas, Ic_guess, V_criterion):
 
 
 #Objective function to be called in curve fit optimizer
+#fit DC offset, linear resistance and SC contribution
 def curve_fit_obj(x, current, V_raw, V_criterion):
-	#fit DC offset, linear resistance and SC contribution
 
-	#x - offset, resistance, Ic, n
 	V = x[0] + current*x[1] + V_criterion*(np.power(current/x[2],x[3]))
-
+	
 	nan_index = np.argwhere(current<0)
 	V[nan_index] = 0
 	V_raw[nan_index] = 0
-
 	err_val = np.linalg.norm(V-V_raw)
+
 	return err_val
 		
 
@@ -215,33 +256,60 @@ def curve_fit_obj(x, current, V_raw, V_criterion):
 
 
 
-#Create a folder for the experiment
-def create_results_folder(test_code_0):
 
-	keep_trying = True
-	code_num = 1
-	dir_name = 'Results\\' + test_code_0 + '_' + str(code_num)
-
-	#Find a unique number in the results folder and create a new directory
-	while keep_trying == True:
-
-		test_code = test_code_0 + '_' + str(code_num)
-		dir_name = 'Results\\'+ test_code
-
-		if code_num > 1e6:
-			print('Error! Enormous amount of folders created')
-			print('Please fix error and try again')
-
-		elif os.path.exists(dir_name):
-			code_num += 1
-
-		else:
-			os.makedirs(dir_name)
-			keep_trying = False
+##########################################################################################
+#Start cooldown monitor
 
 
-	return dir_name
+def monitor_cooldown():
 
+
+	#Initialize instruments
+	rm = visa.ResourceManager()
+	nanovm = init_nanovm(rm, max_voltage = 0.01, NPLC = 1)
+	dvm = init_dvm(rm, max_voltage = 0.1, NPLC = 0.1)
+	sorenson = init_sorenson_psu(rm, max_voltage=3)
+
+	#Initialize vectors to be filled in IV curve
+	time_array = []
+	Vsample_1 = []
+	Vsample_2 = []
+
+	#Create a figure that will be updated live
+	fig = plt.figure(figsize=(8,6))
+	ax1 = fig.add_subplot(1, 1, 1)
+	plt.ion()
+	L1, = ax1.plot(time_array, Vsample_1, 'k', label = 'Ch1')
+	L2, = ax1.plot(time_array, Vsample_2, 'b', label = 'Ch2')
+	
+	#Start IV curve
+	while True:
+
+		#Get voltages from meters
+		time_array.append(time.time())
+		Vsample_1.append(get_nanovm(nanovm, ch_num = 1))
+		Vsample_2.append(get_nanovm(nanovm, ch_num = 1))
+
+		#Print values. Could be used to recover valuable data if program crashes
+		print(i, time_array[i], I_shunt[i], Vsample_1[i], Vsample_2[i])
+
+		L1.set_ydata(Vsample_1)
+		L1.set_xdata(time_array)
+		L2.set_ydata(Vsample_2)
+		L2.set_xdata(time_array)
+
+		plt.pause(0.01)
+		time.sleep(1)
+		plt.savefig(dir_name + '\\' +'cooldown.png', dpi=500) #Simply over-writes existing photo, for now
+
+	plt.show()
+	plt.close()
+
+	return 
+
+
+#End cooldown monitor
+##########################################################################################
 
 
 

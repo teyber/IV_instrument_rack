@@ -1,14 +1,8 @@
 
 
-
-# import serial
-import sys
-import time
 import visa
 import numpy as np
-import matplotlib.pyplot as plt
-
-
+import time
 
 
 ##########################################################################################
@@ -167,7 +161,7 @@ def ramp_sorenson_psu(sorenson_psu, I_ramp_time, I_ramp_mag):
 	return
 
 
-#Go to 0 amps, disable PSU as much as possible
+#Used to disable and re-enable 
 def modify_sorenson_limits(sorenson_psu, max_I, max_V):
 
 	sorenson_psu.write('SOUR:CURR '+ str(max_I))
