@@ -154,7 +154,7 @@ def run_IV_curve(I_start, I_end, I_inc, test_code = 'test_tape'):
 
 	#Ramp down, do not collect voltages along way
 	time.sleep(0.1)
-	down_ramp_time = 4
+	down_ramp_time = 3
 	print('IV curve complete. Beginning ramp down for ' + str(down_ramp_time) + ' seconds')
 	ramp_sorenson_psu(sorenson_psu, I_ramp_time=down_ramp_time, I_ramp_mag=0)
 	time.sleep(down_ramp_time+1)

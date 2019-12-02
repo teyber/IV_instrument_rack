@@ -64,7 +64,6 @@ def get_nanovm(nanovm, ch_num):
 ##########################################################################################
 #Start Keithley 2010
 
-
 #This function initiates the Keithley 2010 multimeter
 #and gets is ready to start returning single readings
 #upon receiving a :READ? command
@@ -110,6 +109,32 @@ def get_dvm(dvm):
 
 
 
+
+
+##########################################################################################
+#Start Agilent 33210A function generator
+
+#This function initiates the Agilent 33210A function generator
+def init_waveform(rm):
+
+	waveform = rm.open_resource("TCPIP::192.168.100.10::gpib0,15::INSTR")
+	dvm.write('*IDN?')
+	print(dvm.read())
+
+	waveform.timeout = 100
+	waveform.write_termination = '\n'
+	waveform.read_termination = '\n'
+	waveform.write("*RST")
+	time.sleep(0.1)
+
+
+	return waveform
+
+
+
+
+#End Agilent 33210A
+##########################################################################################
 
 
 
