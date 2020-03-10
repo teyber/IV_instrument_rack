@@ -32,36 +32,37 @@ def run_IV_curve(I_start, I_end, I_inc, test_code = 'test_tape'):
 	sorenson = init_sorenson_psu(rm, max_voltage=3)
 
 
-	#Create folder if it doesn't exist
-	dir_name = 'Results\\' + test_code
-	if os.path.exists(dir_name):
-		print('Folder with test name already exists')
-		print('0 - return to main loop')		
-		print('1 - Continue')
-		folder_warning = input('What would you like to do?')
+	# #Create folder if it doesn't exist
+	# dir_name = 'Results\\' + test_code
+	# if os.path.exists(dir_name):
+	# 	print('Folder with test name already exists')
+	# 	print('0 - return to main loop')		
+	# 	print('1 - Continue')
+	# 	folder_warning = input('What would you like to do?')
 
-		if folder_conflict == 1: continue
-		else: return
+	# 	if folder_conflict == 1: 
+	# 		continue
+	# 	else: return
 
-	else:
-		os.makedirs(dir_name)
+	# else:
+	# 	os.makedirs(dir_name)
 
 
-	#Ask user to double check current range before proceeding
-	I_vec = np.arange(I_start, I_end + I_inc, I_inc)
-	print('Safety check')
-	print('Programmed current range [A]: ', np.min(I_vec), np.max(I_vec))
-	print('Programmed voltage threshold [V]: ', V_sample_max)
-	print('\n')
-	print('0 - return to main loop')		
-	print('1 - Continue with IV curve')
-	current_warning = input('What would you like to do?')
+	# #Ask user to double check current range before proceeding
+	# I_vec = np.arange(I_start, I_end + I_inc, I_inc)
+	# print('Safety check')
+	# print('Programmed current range [A]: ', np.min(I_vec), np.max(I_vec))
+	# print('Programmed voltage threshold [V]: ', V_sample_max)
+	# print('\n')
+	# print('0 - return to main loop')		
+	# print('1 - Continue with IV curve')
+	# current_warning = input('What would you like to do?')
 
-	if current_warning == 1: 
-		print('Continuing with IV curve - systems will be energized')
-		continue
+	# if current_warning == 1: 
+	# 	print('Continuing with IV curve - systems will be energized')
+	# 	continue
 
-	else: return
+	# else: return
 
 	#Initialize vectors to be filled in IV curve
 	num_points = np.size(I_vec)

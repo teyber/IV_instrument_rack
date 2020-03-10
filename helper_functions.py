@@ -13,7 +13,8 @@ import time
 #Note - there are two channels. Must select channel before querying read
 def init_nanovm(rm, max_voltage, NPLC):
 
-	nanovm = rm.open_resource("TCPIP::192.168.100.10::gpib0,22::INSTR")
+	nanovm = rm.open_resource("TCPIP::169.254.58.10::gpib0,22::INSTR")
+	#nanovm = rm.open_resource("TCPIP::192.168.100.10::gpib0,22::INSTR")	
 	nanovm.write('*IDN?')
 	print(nanovm.read())
 
@@ -49,7 +50,7 @@ def get_nanovm(nanovm, ch_num):
 		nanovm.write('ROUT:TERM FRON1')
 
 	nanovm.write('READ?')
-	v_nvm1 = float(nanovm.read())
+	v_nvm = float(nanovm.read())
 
 	return v_nvm
 
@@ -69,7 +70,10 @@ def get_nanovm(nanovm, ch_num):
 #upon receiving a :READ? command
 def init_dvm(rm, max_voltage, NPLC):
 
-	dvm = rm.open_resource("TCPIP::192.168.100.10::gpib0,8::INSTR")
+	dvm = rm.open_resource("TCPIP::169.254.58.10::gpib0,8::INSTR")
+	#dvm = rm.open_resource("TCPIP::192.168.100.10::gpib0,8::INSTR")
+
+	
 	dvm.write('*IDN?')
 	print(dvm.read())
 
@@ -117,7 +121,10 @@ def get_dvm(dvm):
 #This function initiates the Agilent 33210A function generator
 def init_waveform(rm):
 
-	waveform = rm.open_resource("TCPIP::192.168.100.10::gpib0,15::INSTR")
+	#waveform = rm.open_resource("TCPIP::192.168.100.10::gpib0,15::INSTR")
+	waveform = rm.open_resource("TCPIP::169.254.58.10::gpib0,15::INSTR")
+
+	
 	dvm.write('*IDN?')
 	print(dvm.read())
 
@@ -146,23 +153,26 @@ def init_waveform(rm):
 #A maximum voltage is programmed
 def init_sorenson_psu(rm, max_voltage):
 
-	sorenson_psu = rm.open_resource("TCPIP::192.168.100.10::gpib0,3::INSTR") #"TCPIP::192.168.100.1::1394::SOCKET"
-	sorenson_psu.timeout = 100
-	sorenson_psu.write_termination = '\n'
-	sorenson_psu.read_termination = '\n'
-	sorenson_psu.write("*IDN?")
-	print(sorenson_psu.read())
+	#sorenson = rm.open_resource("TCPIP::192.168.100.10::gpib0,7::INSTR") #"TCPIP::192.168.100.1::1394::SOCKET"
+	sorenson = rm.open_resource("TCPIP::169.254.58.10::gpib0,7::INSTR") #"TCPIP::192.168.100.1::1394::SOCKET"
+
+	
+	sorenson.timeout = 100
+	sorenson.write_termination = '\n'
+	sorenson.read_termination = '\n'
+	sorenson.write("*IDN?")
+	print(sorenson.read())
 
 	# sorenson_psu.write("*CLS")
 	time.sleep(0.2)
-	sorenson_psu.write("*RST")
+	sorenson.write("*RST")
 	time.sleep(0.5)
-	sorenson_psu.write('SOUR:VOLT ' + str(max_voltage))
+	sorenson.write('SOUR:VOLT ' + str(max_voltage))
 	time.sleep(0.1)
-	sorenson_psu.write('SOUR:CURR 0')
+	sorenson.write('SOUR:CURR 0')
 	time.sleep(0.1)
 
-	return sorenson_psu
+	return sorenson
 
 
 
