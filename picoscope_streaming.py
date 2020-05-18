@@ -65,6 +65,7 @@ def main():
 
 	test_name = 'reed_may18_A01'
 
+	print('try streaming')
 
 	dir_name = create_folder(test_name)
 	picoscope_measure(dir_name)
