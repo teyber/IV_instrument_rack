@@ -18,8 +18,8 @@ status = {}
 #Ranges: "PS4000_10MV", "PS4000_20MV", "PS4000_50MV", "PS4000_100MV", "PS4000_200MV", "PS4000_500MV", "PS4000_1V",  "PS4000_2V",
 chRange = 4
 
-maxSamples = int(1e5) #per segment?
-nSegments = 60*5
+maxSamples = int(1e6) #per segment?
+nSegments = 1
 
 #global timebase
 samp_freq = 1e5 #1 MHz
@@ -30,27 +30,18 @@ print('Calculated time base: ', timebase, ' at sample frequency ', samp_freq)
 timeIntervalns = ctypes.c_float()
 
 
+sizeOfOneBuffer = maxSamples*nSegments
+
+
 # Create buffers ready for assigning pointers for data collection
-bufferAMaxArr = []
-bufferBMaxArr = []
-bufferCMaxArr = []
-bufferDMaxArr = []
-bufferEMaxArr = []
-bufferFMaxArr = []
-bufferGMaxArr = []
-bufferHMaxArr = []
-
-
-for i in np.arange(nSegments):
-	bufferAMaxArr.append((ctypes.c_int32 * maxSamples)())
-	bufferBMaxArr.append((ctypes.c_int32 * maxSamples)())
-	bufferCMaxArr.append((ctypes.c_int32 * maxSamples)())
-	bufferDMaxArr.append((ctypes.c_int32 * maxSamples)())
-	bufferEMaxArr.append((ctypes.c_int32 * maxSamples)())
-	bufferFMaxArr.append((ctypes.c_int32 * maxSamples)())
-	bufferGMaxArr.append((ctypes.c_int32 * maxSamples)())
-	bufferHMaxArr.append((ctypes.c_int32 * maxSamples)())
-
+bufferAMax = np.zeros(shape = maxSamples, dtype=np.int16)
+bufferBMax = np.zeros(shape = maxSamples, dtype=np.int16)
+bufferCMax = np.zeros(shape = maxSamples, dtype=np.int16)
+bufferDMax = np.zeros(shape = maxSamples, dtype=np.int16)
+bufferEMax = np.zeros(shape = maxSamples, dtype=np.int16)
+bufferFMax = np.zeros(shape = maxSamples, dtype=np.int16)
+bufferGMax = np.zeros(shape = maxSamples, dtype=np.int16)
+bufferHMax = np.zeros(shape = maxSamples, dtype=np.int16)
 
 
 
@@ -68,7 +59,7 @@ def main():
 	print('try streaming')
 
 	dir_name = create_folder(test_name)
-	picoscope_measure(dir_name)
+	stream_picoscope(dir_name)
 	close_pico()
 
 	# plot_pico(dir_name)
@@ -99,6 +90,244 @@ def create_folder(test_code_0):
 	print('Saving results to directory: ', dir_name)
 	return dir_name
 
+
+
+
+def stream_picoscope(dir_name):
+
+##################################################################
+# Step 1. Open the oscilloscope using ps4000aOpenUnit(). 
+##################################################################
+
+	status["openunit"] = ps.ps4000aOpenUnit(ctypes.byref(chandle), None)
+
+	try: assert_pico_ok(status["openunit"])
+	except:
+	    powerStatus = status["openunit"]
+	    if powerStatus == 286: status["changePowerSource"] = ps.ps4000aChangePowerSource(chandle, powerStatus)
+	    else:raise
+	    assert_pico_ok(status["changePowerSource"])
+
+    
+
+##################################################################
+# Step 2. Select channels, ranges and AC/DC coupling using ps4000aSetChannel(). 
+##################################################################
+
+	#Arguments: handle, channel, enabled, COUPLING type,  range, analogOffset 	# handle = chandle, channel = PS4000a_CHANNEL_A = 0, enabled = 1,# coupling type = PS4000a_DC = 1,# range = PS4000a_2V = 7,# analogOffset = 0 V
+	status["setChA"] = ps.ps4000aSetChannel(chandle, 0, 1, 1, chRange, 0)
+	assert_pico_ok(status["setChA"])
+
+	status["setChB"] = ps.ps4000aSetChannel(chandle, 1, 1, 1, chRange, 0)
+	assert_pico_ok(status["setChB"])
+
+	status["setChC"] = ps.ps4000aSetChannel(chandle, 2, 1, 1, chRange, 0)
+	assert_pico_ok(status["setChC"])
+
+	status["setChD"] = ps.ps4000aSetChannel(chandle, 3, 1, 1, chRange, 0)
+	assert_pico_ok(status["setChD"])
+
+	status["setChE"] = ps.ps4000aSetChannel(chandle, 4, 1, 1, chRange, 0)
+	assert_pico_ok(status["setChE"])
+
+	status["setChF"] = ps.ps4000aSetChannel(chandle, 5, 1, 1, chRange, 0)
+	assert_pico_ok(status["setChF"])
+
+	status["setChG"] = ps.ps4000aSetChannel(chandle, 6, 1, 1, chRange, 0)
+	assert_pico_ok(status["setChG"])
+
+	status["setChH"] = ps.ps4000aSetChannel(chandle, 7, 1, 1, chRange, 0)
+	assert_pico_ok(status["setChH"])
+
+
+
+##################################################################
+# Step 3. Use the trigger setup functions [1] [2] [3] [4] to set up the trigger if required. 
+##################################################################
+
+	print('To-do: is this causing a delay between blocks? or does trigger only happen on first block?')
+	#Trigger arguments: handle, enable, source, threshold, direction, delay, autoTrigger_ms
+	status["trigger"] = ps.ps4000aSetSimpleTrigger(chandle, 1, 0, 1024, 2, 0, 1) #was 100 ms autotrigger_ms
+	assert_pico_ok(status["trigger"])
+
+
+##################################################################
+# Step 4. Call ps4000aSetDataBuffer() to tell the driver where your data buffer is. 
+##################################################################
+
+	for i in np.arange(nSegments):
+		# (no s) arguments: handle, channel, buffer, bufferlength, segment index, mode
+		status["setDataBufferA"] = ps.ps4000aSetDataBuffer(chandle, 0, ctypes.byref(bufferAMax),maxSamples, i , 0)
+		assert_pico_ok(status["setDataBufferA"])
+
+		status["setDataBufferB"] = ps.ps4000aSetDataBuffer(chandle, 1, ctypes.byref(bufferBMax), maxSamples, i , 0)
+		assert_pico_ok(status["setDataBufferB"])
+
+		status["setDataBufferC"] = ps.ps4000aSetDataBuffer(chandle, 2, ctypes.byref(bufferCMax), maxSamples, i , 0)
+		assert_pico_ok(status["setDataBufferC"])
+
+		status["setDataBufferD"] = ps.ps4000aSetDataBuffer(chandle, 3, ctypes.byref(bufferDMax), maxSamples, i , 0)
+		assert_pico_ok(status["setDataBufferD"])
+
+		status["setDataBufferE"] = ps.ps4000aSetDataBuffer(chandle, 4, ctypes.byref(bufferEMax), maxSamples, i , 0)
+		assert_pico_ok(status["setDataBufferE"])
+
+		status["setDataBufferF"] = ps.ps4000aSetDataBuffer(chandle, 5, ctypes.byref(bufferFMax), maxSamples, i , 0)
+		assert_pico_ok(status["setDataBufferF"])
+
+		status["setDataBufferG"] = ps.ps4000aSetDataBuffer(chandle, 6, ctypes.byref(bufferGMax), maxSamples, i , 0)
+		assert_pico_ok(status["setDataBufferG"])
+
+		status["setDataBufferH"] = ps.ps4000aSetDataBuffer(chandle, 7, ctypes.byref(bufferHMax), maxSamples, i , 0)
+		assert_pico_ok(status["setDataBufferH"])
+
+
+##################################################################
+# Step 5. Set up downsampling and start the oscilloscope running using ps4000aRunStreaming(). 
+##################################################################
+
+	
+	sampleInterval = ctypes.c_int32(samp_dt)
+	sampleUnits = ps.PS4000A_TIME_UNITS['PS4000A_US']
+	maxPreTriggerSamples = 0 # We are not triggering:
+	autoStopOn = 1
+	downsampleRatio = 1	# No downsampling:
+	status["runStreaming"] = ps.ps4000aRunStreaming(chandle, ctypes.byref(sampleInterval), sampleUnits, maxPreTriggerSamples, totalSamples, autoStopOn, downsampleRatio, ps.PS4000A_RATIO_MODE['PS4000A_RATIO_MODE_NONE'], maxSamples)
+	assert_pico_ok(status["runStreaming"])
+
+
+
+##################################################################
+# Step 6. Call ps4000aGetStreamingLatestValues() to get data. 
+##################################################################
+
+	# We need a big buffer, not registered with the driver, to keep our complete capture in.
+	bufferCompleteA = np.zeros(shape=totalSamples, dtype=np.int16)
+	bufferCompleteB = np.zeros(shape=totalSamples, dtype=np.int16)
+	bufferCompleteC = np.zeros(shape=totalSamples, dtype=np.int16)
+	bufferCompleteD = np.zeros(shape=totalSamples, dtype=np.int16)
+	bufferCompleteE = np.zeros(shape=totalSamples, dtype=np.int16)
+	bufferCompleteF = np.zeros(shape=totalSamples, dtype=np.int16)
+	bufferCompleteG = np.zeros(shape=totalSamples, dtype=np.int16)
+	bufferCompleteH = np.zeros(shape=totalSamples, dtype=np.int16)
+
+
+	nextSample = 0
+	autoStopOuter = False
+	wasCalledBack = False
+
+
+	# Convert the python function into a C function pointer.
+	cFuncPtr = ps.StreamingReadyType(pico_streaming_callback)
+
+	# Fetch data from the driver in a loop, copying it out of the registered buffers and into our complete one.
+	while nextSample < totalSamples and not autoStopOuter:
+	    wasCalledBack = False
+	    status["getStreamingLastestValues"] = ps.ps4000aGetStreamingLatestValues(chandle, cFuncPtr, None)
+	    if not wasCalledBack:
+	        # If we weren't called back by the driver, this means no data is ready. Sleep for a short while before trying
+	        # again.
+	        time.sleep(0.01)
+
+	print("Done grabbing values.")
+
+
+
+
+##################################################################
+# Step 7. Process data returned to your application's function. This example is using autoStop, so after the driver has received all the data points requested by the application, it stops the streaming. 
+##################################################################
+
+
+	# Find maximum ADC count value
+	# handle = chandle
+	# pointer to value = ctypes.byref(maxADC)
+	maxADC = ctypes.c_int16()
+	status["maximumValue"] = ps.ps4000aMaximumValue(chandle, ctypes.byref(maxADC))
+	assert_pico_ok(status["maximumValue"])
+
+	# Convert ADC counts data to mV
+	adc2mVChAMax = adc2mV(bufferCompleteA, channel_range, maxADC)
+	adc2mVChBMax = adc2mV(bufferCompleteB, channel_range, maxADC)
+	adc2mVChCMax = adc2mV(bufferCompleteC, channel_range, maxADC)
+	adc2mVChDMax = adc2mV(bufferCompleteD, channel_range, maxADC)
+	adc2mVChEMax = adc2mV(bufferCompleteE, channel_range, maxADC)
+	adc2mVChFMax = adc2mV(bufferCompleteF, channel_range, maxADC)
+	adc2mVChGMax = adc2mV(bufferCompleteG, channel_range, maxADC)
+	adc2mVChHMax = adc2mV(bufferCompleteH, channel_range, maxADC)
+
+
+	# Create time data
+	time_ns = np.linspace(0, (totalSamples) * actualSampleIntervalNs, totalSamples)
+
+
+	np.save(dir_name + '\\time_ns.npy', time_ns)
+	np.save(dir_name + '\\ChA.npy', adc2mVChAMax[:])
+	np.save(dir_name + '\\ChB.npy', adc2mVChBMax[:])
+	np.save(dir_name + '\\ChC.npy', adc2mVChCMax[:])
+	np.save(dir_name + '\\ChD.npy', adc2mVChDMax[:])
+	np.save(dir_name + '\\ChE.npy', adc2mVChEMax[:])
+	np.save(dir_name + '\\ChF.npy', adc2mVChFMax[:])
+	np.save(dir_name + '\\ChG.npy', adc2mVChGMax[:])
+	np.save(dir_name + '\\ChH.npy', adc2mVChHMax[:])
+
+
+	# Plot data from channel A and B
+	# plt.plot(time, adc2mVChAMax[:])
+	# plt.plot(time, adc2mVChBMax[:])
+	# plt.xlabel('Time (ns)')
+	# plt.ylabel('Voltage (mV)')
+	# plt.show()
+
+	# Stop the scope
+	# handle = chandle
+	status["stop"] = ps.ps4000aStop(chandle)
+	assert_pico_ok(status["stop"])
+
+	# Disconnect the scope
+	# handle = chandle
+	status["close"] = ps.ps4000aCloseUnit(chandle)
+	assert_pico_ok(status["close"])
+
+	# Display status returns
+	print(status)
+
+
+
+	return
+
+
+
+##################################################################
+# Step 8. Call ps4000aStop(), even if autoStop is enabled. 
+##################################################################
+
+##################################################################
+# Step 9. Request new views of stored data using different downsampling parameters: see Retrieving stored data. 
+##################################################################
+
+##################################################################
+# Step 10 Close the device using ps4000aCloseUnit().
+##################################################################
+
+
+	return
+
+
+
+
+def pico_streaming_callback(handle, noOfSamples, startIndex, overflow, triggerAt, triggered, autoStop, param):
+    global nextSample, autoStopOuter, wasCalledBack
+    wasCalledBack = True
+    destEnd = nextSample + noOfSamples
+    sourceEnd = startIndex + noOfSamples
+    bufferCompleteA[nextSample:destEnd] = bufferAMax[startIndex:sourceEnd]
+    bufferCompleteB[nextSample:destEnd] = bufferBMax[startIndex:sourceEnd]
+    nextSample += noOfSamples
+    if autoStop:
+        autoStopOuter = True
+
+    return
 
 
 
@@ -290,6 +519,7 @@ def picoscope_measure(dir_name):
 
 
 
+	return
 
 
 
