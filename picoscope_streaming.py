@@ -63,7 +63,7 @@ def main():
 
 
 
-	test_name = 'reed_march3_A01'
+	test_name = 'reed_may18_A01'
 
 
 	dir_name = create_folder(test_name)
