@@ -20,16 +20,22 @@ chRange = 4
 
 
 
-sample_period_microseconds = 1
-sizeOfOneBuffer = int(100)
-numBuffersToCapture = 1
+sample_period_microseconds = 5 
+sizeOfOneBuffer = int(0.2e6)
+#capture 1 second at 200 KHz
+
+#Record for 5 minutes
+numBuffersToCapture = int(60*20)
+
 totalSamples = sizeOfOneBuffer * numBuffersToCapture
+
 
 
 
 #HAVING ISSUES PASSING IN GLOBALLY SCOPED ARGS INTO CALL BACK
 #Current solution is to pull them out here
 nextSample = 0
+
 
 # We need a big buffer, not registered with the driver, to keep our complete capture in.
 bufferCompleteA = np.zeros(shape=totalSamples, dtype=np.int16)
@@ -41,18 +47,6 @@ bufferCompleteF = np.zeros(shape=totalSamples, dtype=np.int16)
 bufferCompleteG = np.zeros(shape=totalSamples, dtype=np.int16)
 bufferCompleteH = np.zeros(shape=totalSamples, dtype=np.int16)
 
-
-
-
-# timebase = int((1e9)*samp_dt/12.5-1) #Manual states "timebase(n) -> sample interval dt = 12.5(ns)*(n+1) -> n = dt/(12.5)-1 with dt in nanoseconds"
-# print('Calculated time base: ', timebase, ' at sample frequency ', samp_freq)
-# #timebase = 79 #Manual states "timebase(n) -> sample interval dt = 12.5(ns)*(n+1) -> n = dt/(12.5)-1 with dt in nanoseconds"
-# timeIntervalns = ctypes.c_float()
-
-
-
-
-#sizeOfOneBuffer = maxSamples*nSegments
 
 
 # Create buffers ready for assigning pointers for data collection
@@ -72,24 +66,24 @@ bufferHMax = np.zeros(shape = sizeOfOneBuffer, dtype=np.int16)
 
 def main():
 
-	start_time = time.time()
-
-
+	tot_start_time = time.time()
 
 	test_name = 'reed_may18_A01'
-
-
-
 	dir_name = create_folder(test_name)
+
+
 	stream_picoscope(dir_name)
-	plot_pico(dir_name)
+	print('Streaming and saving time: ', np.round((time.time() - tot_start_time)/60, 1))	
 
 
-	# plot_pico('Results\\reed_march3_A01_save3')
+	# plot_start_time = time.time()
+	# plot_pico(dir_name)
+	# print('Plotting time: ', np.round((time.time() - plot_start_time)/60, 1))	
 
 
+	# plot_pico('Results\\reed_may18_A01_save4')
 
-	print('Elapsed time: ', np.round((time.time() - start_time)/60, 1))	
+	print('Elapsed time: ', np.round((time.time() - tot_start_time)/60, 2))	
 	return
 
 
@@ -111,7 +105,6 @@ def create_folder(test_code_0):
 
 	print('Saving results to directory: ', dir_name)
 	return dir_name
-
 
 
 
@@ -169,7 +162,6 @@ def stream_picoscope(dir_name):
 # Step 3. Use the trigger setup functions [1] [2] [3] [4] to set up the trigger if required. 
 ##################################################################
 
-	print('To-do: is this causing a delay between blocks? or does trigger only happen on first block?')
 	#Trigger arguments: handle, enable, source, threshold, direction, delay, autoTrigger_ms
 	status["trigger"] = ps.ps4000aSetSimpleTrigger(chandle, 1, 0, 1024, 2, 0, 1) #was 100 ms autotrigger_ms
 	assert_pico_ok(status["trigger"])
@@ -212,7 +204,8 @@ def stream_picoscope(dir_name):
 ##################################################################
 
 	
-	sampleInterval = ctypes.c_int32(sample_period_microseconds)
+	# sampleInterval = ctypes.c_int32(sample_period_microseconds)
+	sampleInterval = ctypes.c_int16(sample_period_microseconds)	
 	sampleUnits = ps.PS4000A_TIME_UNITS['PS4000A_US']
 	maxPreTriggerSamples = 0 # We are not triggering:
 	autoStopOn = 1
@@ -252,39 +245,61 @@ def stream_picoscope(dir_name):
 ##################################################################
 # Step 7. Process data returned to your application's function. This example is using autoStop, so after the driver has received all the data points requested by the application, it stops the streaming. 
 ##################################################################
+	
+	print('Data has been retrieved from scope')
 
 
 	# Find maximum ADC count value
-	# handle = chandle
-	# pointer to value = ctypes.byref(maxADC)
 	maxADC = ctypes.c_int16(sample_period_microseconds)
 	status["maximumValue"] = ps.ps4000aMaximumValue(chandle, ctypes.byref(maxADC))
 	assert_pico_ok(status["maximumValue"])
 
+	saving_start_time = time.time()
+
+
+
 	# Convert ADC counts data to mV
-	adc2mVChAMax = adc2mV(bufferCompleteA, chRange, maxADC)
-	adc2mVChBMax = adc2mV(bufferCompleteB, chRange, maxADC)
-	adc2mVChCMax = adc2mV(bufferCompleteC, chRange, maxADC)
-	adc2mVChDMax = adc2mV(bufferCompleteD, chRange, maxADC)
-	adc2mVChEMax = adc2mV(bufferCompleteE, chRange, maxADC)
-	adc2mVChFMax = adc2mV(bufferCompleteF, chRange, maxADC)
-	adc2mVChGMax = adc2mV(bufferCompleteG, chRange, maxADC)
-	adc2mVChHMax = adc2mV(bufferCompleteH, chRange, maxADC)
+	# adc2mVChAMax = adc2mV(bufferCompleteA, chRange, maxADC)
+	# adc2mVChBMax = adc2mV(bufferCompleteB, chRange, maxADC)
+	# adc2mVChCMax = adc2mV(bufferCompleteC, chRange, maxADC)
+	# adc2mVChDMax = adc2mV(bufferCompleteD, chRange, maxADC)
+	# adc2mVChEMax = adc2mV(bufferCompleteE, chRange, maxADC)
+	# adc2mVChFMax = adc2mV(bufferCompleteF, chRange, maxADC)
+	# adc2mVChGMax = adc2mV(bufferCompleteG, chRange, maxADC)
+	# adc2mVChHMax = adc2mV(bufferCompleteH, chRange, maxADC)
 
 
-	# Create time data
+	# print('line 268: ', time.time() - saving_start_time)
+
+
+	# # Create time data
 	time_micros = np.linspace(0, (totalSamples) * actualSampleInterval, totalSamples)
 
 
 	np.save(dir_name + '\\time_micros.npy', time_micros)
-	np.save(dir_name + '\\ChA.npy', adc2mVChAMax[:])
-	np.save(dir_name + '\\ChB.npy', adc2mVChBMax[:])
-	np.save(dir_name + '\\ChC.npy', adc2mVChCMax[:])
-	np.save(dir_name + '\\ChD.npy', adc2mVChDMax[:])
-	np.save(dir_name + '\\ChE.npy', adc2mVChEMax[:])
-	np.save(dir_name + '\\ChF.npy', adc2mVChFMax[:])
-	np.save(dir_name + '\\ChG.npy', adc2mVChGMax[:])
-	np.save(dir_name + '\\ChH.npy', adc2mVChHMax[:])
+	
+
+	np.save(dir_name + '\\time_micros.npy', time_micros)
+	np.save(dir_name + '\\ChA.npy', bufferCompleteA)
+	np.save(dir_name + '\\ChB.npy', bufferCompleteB)
+	np.save(dir_name + '\\ChC.npy', bufferCompleteC)
+	np.save(dir_name + '\\ChD.npy', bufferCompleteD)
+	np.save(dir_name + '\\ChE.npy', bufferCompleteE)
+	np.save(dir_name + '\\ChF.npy', bufferCompleteF)
+	np.save(dir_name + '\\ChG.npy', bufferCompleteG)
+	np.save(dir_name + '\\ChH.npy', bufferCompleteH)
+
+	# np.save(dir_name + '\\ChA.npy', adc2mVChAMax[:])
+	# np.save(dir_name + '\\ChB.npy', adc2mVChBMax[:])
+	# np.save(dir_name + '\\ChC.npy', adc2mVChCMax[:])
+	# np.save(dir_name + '\\ChD.npy', adc2mVChDMax[:])
+	# np.save(dir_name + '\\ChE.npy', adc2mVChEMax[:])
+	# np.save(dir_name + '\\ChF.npy', adc2mVChFMax[:])
+	# np.save(dir_name + '\\ChG.npy', adc2mVChGMax[:])
+	# np.save(dir_name + '\\ChH.npy', adc2mVChHMax[:])
+
+
+	# print('line 286: ', time.time() - saving_start_time)
 
 
 	# handle = chandle
@@ -300,8 +315,10 @@ def stream_picoscope(dir_name):
 	print(status)
 
 
-	return
+	print('Saving data time: ', np.round((time.time() - saving_start_time)/60, 1))	
 
+
+	return
 
 
 
@@ -330,7 +347,6 @@ def pico_streaming_callback(handle, noOfSamples, startIndex, overflow, triggerAt
 		autoStopOuter = True
 
 	return
-
 
 
 
