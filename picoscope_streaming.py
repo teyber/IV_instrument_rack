@@ -21,20 +21,15 @@ chRange = 4
 
 
 sample_period_microseconds = 5 
-sizeOfOneBuffer = int(0.2e6)
-#capture 1 second at 200 KHz
+sizeOfOneBuffer = int(0.2e6) #capture 1 second at 200 KHz
+
 
 #Record for 5 minutes
-numBuffersToCapture = int(60*20)
+# numBuffersToCapture = int(60*20)
+numBuffersToCapture = int(2)
 
 totalSamples = sizeOfOneBuffer * numBuffersToCapture
-
-
-
-
-#HAVING ISSUES PASSING IN GLOBALLY SCOPED ARGS INTO CALL BACK
-#Current solution is to pull them out here
-nextSample = 0
+nextSample = 0 #need this globally scoped...
 
 
 # We need a big buffer, not registered with the driver, to keep our complete capture in.
@@ -46,8 +41,6 @@ bufferCompleteE = np.zeros(shape=totalSamples, dtype=np.int16)
 bufferCompleteF = np.zeros(shape=totalSamples, dtype=np.int16)
 bufferCompleteG = np.zeros(shape=totalSamples, dtype=np.int16)
 bufferCompleteH = np.zeros(shape=totalSamples, dtype=np.int16)
-
-
 
 # Create buffers ready for assigning pointers for data collection
 bufferAMax = np.zeros(shape = sizeOfOneBuffer, dtype=np.int16)
@@ -61,29 +54,31 @@ bufferHMax = np.zeros(shape = sizeOfOneBuffer, dtype=np.int16)
 
 
 
-#To-do: figure out the delay between measurements / trigger offset
-# is it 
 
 def main():
 
 	tot_start_time = time.time()
 
+###########################################
+#Prepare a results folder
 	test_name = 'reed_may18_A01'
 	dir_name = create_folder(test_name)
 
 
+###########################################
+#Record PICOSCOPE data
 	stream_picoscope(dir_name)
 	print('Streaming and saving time: ', np.round((time.time() - tot_start_time)/60, 1))	
 
+###########################################
+#Plot results (warning - will crash if arrays are huge)
+	plot_start_time = time.time()
+	plot_pico(dir_name)
+	print('Plotting time: ', np.round((time.time() - plot_start_time)/60, 1))	
 
-	# plot_start_time = time.time()
-	# plot_pico(dir_name)
-	# print('Plotting time: ', np.round((time.time() - plot_start_time)/60, 1))	
-
-
-	# plot_pico('Results\\reed_may18_A01_save4')
 
 	print('Elapsed time: ', np.round((time.time() - tot_start_time)/60, 2))	
+
 	return
 
 
@@ -105,7 +100,6 @@ def create_folder(test_code_0):
 
 	print('Saving results to directory: ', dir_name)
 	return dir_name
-
 
 
 
@@ -203,7 +197,6 @@ def stream_picoscope(dir_name):
 # Step 5. Set up downsampling and start the oscilloscope running using ps4000aRunStreaming(). 
 ##################################################################
 
-	
 	# sampleInterval = ctypes.c_int32(sample_period_microseconds)
 	sampleInterval = ctypes.c_int16(sample_period_microseconds)	
 	sampleUnits = ps.PS4000A_TIME_UNITS['PS4000A_US']
@@ -213,32 +206,25 @@ def stream_picoscope(dir_name):
 	status["runStreaming"] = ps.ps4000aRunStreaming(chandle, ctypes.byref(sampleInterval), sampleUnits, maxPreTriggerSamples, totalSamples, autoStopOn, downsampleRatio, ps.PS4000A_RATIO_MODE['PS4000A_RATIO_MODE_NONE'], sizeOfOneBuffer)
 	assert_pico_ok(status["runStreaming"])
 
-
 	actualSampleInterval = sampleInterval.value
 
 ##################################################################
 # Step 6. Call ps4000aGetStreamingLatestValues() to get data. 
 ##################################################################
 
-	# nextSample = 0
 	autoStopOuter = False
 	wasCalledBack = False
 
-
-	# Convert the python function into a C function pointer.
-	cFuncPtr = ps.StreamingReadyType(pico_streaming_callback)
+	cFuncPtr = ps.StreamingReadyType(pico_streaming_callback) 	# Convert the python function into a C function pointer.
 
 	# Fetch data from the driver in a loop, copying it out of the registered buffers and into our complete one.
 	while nextSample < totalSamples and not autoStopOuter:
 		wasCalledBack = False
 		status["getStreamingLastestValues"] = ps.ps4000aGetStreamingLatestValues(chandle, cFuncPtr, None)
 		if not wasCalledBack:
-			# If we weren't called back by the driver, this means no data is ready. Sleep for a short while before trying
-			# again.
 			time.sleep(0.01)
 
-	print("Done grabbing values.")
-
+	print('Data has been retrieved from scope')
 
 
 
@@ -246,60 +232,43 @@ def stream_picoscope(dir_name):
 # Step 7. Process data returned to your application's function. This example is using autoStop, so after the driver has received all the data points requested by the application, it stops the streaming. 
 ##################################################################
 	
-	print('Data has been retrieved from scope')
-
-
-	# Find maximum ADC count value
-	maxADC = ctypes.c_int16(sample_period_microseconds)
-	status["maximumValue"] = ps.ps4000aMaximumValue(chandle, ctypes.byref(maxADC))
-	assert_pico_ok(status["maximumValue"])
-
 	saving_start_time = time.time()
 
+	#Ranges: "PS4000_10MV", "PS4000_20MV", "PS4000_50MV", "PS4000_100MV", "PS4000_200MV", "PS4000_500MV", "PS4000_1V",  "PS4000_2V"
+	if chRange == 0: adc_mv_range = 10
+	elif chRange == 1: adc_mv_range = 20	
+	elif chRange == 2: adc_mv_range = 50
+	elif chRange == 3: adc_mv_range = 100
+	elif chRange == 4: adc_mv_range = 200			
+	elif chRange == 5: adc_mv_range = 500	
+	elif chRange == 6: adc_mv_range = 1000	
+	elif chRange == 7: adc_mv_range = 2000	
 
+	pico_adc_res = 32767 #+-, value used in "ps4824BlockExample"
 
 	# Convert ADC counts data to mV
-	# adc2mVChAMax = adc2mV(bufferCompleteA, chRange, maxADC)
-	# adc2mVChBMax = adc2mV(bufferCompleteB, chRange, maxADC)
-	# adc2mVChCMax = adc2mV(bufferCompleteC, chRange, maxADC)
-	# adc2mVChDMax = adc2mV(bufferCompleteD, chRange, maxADC)
-	# adc2mVChEMax = adc2mV(bufferCompleteE, chRange, maxADC)
-	# adc2mVChFMax = adc2mV(bufferCompleteF, chRange, maxADC)
-	# adc2mVChGMax = adc2mV(bufferCompleteG, chRange, maxADC)
-	# adc2mVChHMax = adc2mV(bufferCompleteH, chRange, maxADC)
-
-
-	# print('line 268: ', time.time() - saving_start_time)
+	ChA_mv = bufferCompleteA[:]*(adc_mv_range/pico_adc_res)
+	ChB_mv = bufferCompleteB[:]*(adc_mv_range/pico_adc_res)
+	ChC_mv = bufferCompleteC[:]*(adc_mv_range/pico_adc_res)
+	ChD_mv = bufferCompleteD[:]*(adc_mv_range/pico_adc_res)
+	ChE_mv = bufferCompleteE[:]*(adc_mv_range/pico_adc_res)
+	ChF_mv = bufferCompleteF[:]*(adc_mv_range/pico_adc_res)
+	ChG_mv = bufferCompleteG[:]*(adc_mv_range/pico_adc_res)
+	ChH_mv = bufferCompleteH[:]*(adc_mv_range/pico_adc_res)
 
 
 	# # Create time data
 	time_micros = np.linspace(0, (totalSamples) * actualSampleInterval, totalSamples)
 
-
 	np.save(dir_name + '\\time_micros.npy', time_micros)
-	
-
-	np.save(dir_name + '\\time_micros.npy', time_micros)
-	np.save(dir_name + '\\ChA.npy', bufferCompleteA)
-	np.save(dir_name + '\\ChB.npy', bufferCompleteB)
-	np.save(dir_name + '\\ChC.npy', bufferCompleteC)
-	np.save(dir_name + '\\ChD.npy', bufferCompleteD)
-	np.save(dir_name + '\\ChE.npy', bufferCompleteE)
-	np.save(dir_name + '\\ChF.npy', bufferCompleteF)
-	np.save(dir_name + '\\ChG.npy', bufferCompleteG)
-	np.save(dir_name + '\\ChH.npy', bufferCompleteH)
-
-	# np.save(dir_name + '\\ChA.npy', adc2mVChAMax[:])
-	# np.save(dir_name + '\\ChB.npy', adc2mVChBMax[:])
-	# np.save(dir_name + '\\ChC.npy', adc2mVChCMax[:])
-	# np.save(dir_name + '\\ChD.npy', adc2mVChDMax[:])
-	# np.save(dir_name + '\\ChE.npy', adc2mVChEMax[:])
-	# np.save(dir_name + '\\ChF.npy', adc2mVChFMax[:])
-	# np.save(dir_name + '\\ChG.npy', adc2mVChGMax[:])
-	# np.save(dir_name + '\\ChH.npy', adc2mVChHMax[:])
-
-
-	# print('line 286: ', time.time() - saving_start_time)
+	np.save(dir_name + '\\ChA_mv.npy', ChA_mv)
+	np.save(dir_name + '\\ChB_mv.npy', ChB_mv)
+	np.save(dir_name + '\\ChC_mv.npy', ChC_mv)
+	np.save(dir_name + '\\ChD_mv.npy', ChD_mv)
+	np.save(dir_name + '\\ChE_mv.npy', ChE_mv)
+	np.save(dir_name + '\\ChF_mv.npy', ChF_mv)
+	np.save(dir_name + '\\ChG_mv.npy', ChG_mv)
+	np.save(dir_name + '\\ChH_mv.npy', ChH_mv)
 
 
 	# handle = chandle
@@ -307,13 +276,9 @@ def stream_picoscope(dir_name):
 	assert_pico_ok(status["stop"])
 
 	# Disconnect the scope
-	# handle = chandle
 	status["close"] = ps.ps4000aCloseUnit(chandle)
 	assert_pico_ok(status["close"])
-
-	# Display status returns
 	print(status)
-
 
 	print('Saving data time: ', np.round((time.time() - saving_start_time)/60, 1))	
 
@@ -341,14 +306,11 @@ def pico_streaming_callback(handle, noOfSamples, startIndex, overflow, triggerAt
 	bufferCompleteH[nextSample:destEnd] = bufferHMax[startIndex:sourceEnd]
 
 
-
 	nextSample += noOfSamples
 	if autoStop:
 		autoStopOuter = True
 
 	return
-
-
 
 
 
@@ -361,30 +323,32 @@ def plot_pico(dir_name):
 	color_code = 0
 
 	time_vec = (1e-6)*np.load(dir_name + '\\time_micros.npy') #units of nanoseconds
-	ChA = np.load(dir_name + '\\ChA.npy')
-	ChB = np.load(dir_name + '\\ChB.npy')
-	ChC = np.load(dir_name + '\\ChC.npy')
-	ChD = np.load(dir_name + '\\ChD.npy')
-	ChE = np.load(dir_name + '\\ChE.npy')
-	ChF = np.load(dir_name + '\\ChF.npy')
-	ChG = np.load(dir_name + '\\ChG.npy')
-	ChH = np.load(dir_name + '\\ChH.npy')
+	ChA_mv = np.load(dir_name + '\\ChA_mv.npy')
+	ChB_mv = np.load(dir_name + '\\ChB_mv.npy')
+	ChC_mv = np.load(dir_name + '\\ChC_mv.npy')
+	ChD_mv = np.load(dir_name + '\\ChD_mv.npy')
+	ChE_mv = np.load(dir_name + '\\ChE_mv.npy')
+	ChF_mv = np.load(dir_name + '\\ChF_mv.npy')
+	ChG_mv = np.load(dir_name + '\\ChG_mv.npy')
+	ChH_mv = np.load(dir_name + '\\ChH_mv.npy')
 
 	colors = plt.cm.jet(np.linspace(0.1, 0.9, 8))
+
 	# Plot data from channel A and B
-	plt.plot(time_vec, ChA, color=colors[0], label = 'Ch A')
-	plt.plot(time_vec, ChB, color=colors[1],  label = 'Ch B')
-	plt.plot(time_vec, ChC, color=colors[2], label = 'Ch C')
-	plt.plot(time_vec, ChD, color=colors[3],  label = 'Ch D')
-	plt.plot(time_vec, ChE, color=colors[4], label = 'Ch E')
-	plt.plot(time_vec, ChF, color=colors[5], label = 'Ch F')
-	plt.plot(time_vec, ChG, color=colors[6], label = 'Ch G')
-	plt.plot(time_vec, ChH, color=colors[7],  label = 'Ch H')
+	plt.plot(time_vec, ChA_mv, color=colors[0], label = 'Ch A')
+	plt.plot(time_vec, ChB_mv, color=colors[1],  label = 'Ch B')
+	plt.plot(time_vec, ChC_mv, color=colors[2], label = 'Ch C')
+	plt.plot(time_vec, ChD_mv, color=colors[3],  label = 'Ch D')
+	plt.plot(time_vec, ChE_mv, color=colors[4], label = 'Ch E')
+	plt.plot(time_vec, ChF_mv, color=colors[5], label = 'Ch F')
+	plt.plot(time_vec, ChG_mv, color=colors[6], label = 'Ch G')
+	plt.plot(time_vec, ChH_mv, color=colors[7],  label = 'Ch H')
 
 	plt.legend(loc='upper center')
 	plt.xlabel('Time (s)')
 	plt.ylabel('Voltage (mV)')
 	plt.show()
+
 
 
 	return
