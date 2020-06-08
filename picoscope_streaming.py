@@ -15,75 +15,94 @@ import time
 chandle = ctypes.c_int16()
 status = {}
 
-#Ranges: "PS4000_10MV", "PS4000_20MV", "PS4000_50MV", "PS4000_100MV", "PS4000_200MV", "PS4000_500MV", "PS4000_1V",  "PS4000_2V",
-chRange = 4
-
-maxSamples = int(1e5) #per segment?
-nSegments = 60*5
-
-#global timebase
-samp_freq = 1e5 #1 MHz
-samp_dt = 1/(samp_freq)
-timebase = int((1e9)*samp_dt/12.5-1) #Manual states "timebase(n) -> sample interval dt = 12.5(ns)*(n+1) -> n = dt/(12.5)-1 with dt in nanoseconds"
-print('Calculated time base: ', timebase, ' at sample frequency ', samp_freq)
-#timebase = 79 #Manual states "timebase(n) -> sample interval dt = 12.5(ns)*(n+1) -> n = dt/(12.5)-1 with dt in nanoseconds"
-timeIntervalns = ctypes.c_float()
 
 
-# Create buffers ready for assigning pointers for data collection
-bufferAMaxArr = []
-bufferBMaxArr = []
-bufferCMaxArr = []
-bufferDMaxArr = []
-bufferEMaxArr = []
-bufferFMaxArr = []
-bufferGMaxArr = []
-bufferHMaxArr = []
+#USER INPUT HERE:
+chRange = 1#USER INPUT HERE: ADC range #Ranges: "PS4000_10MV", "PS4000_20MV", "PS4000_50MV", "PS4000_100MV", "PS4000_200MV", "PS4000_500MV", "PS4000_1V",  "PS4000_2V",
+meas_channels = [0,1,2,3,4,5,6,7] #0,1,2,3,4,5,6,7 for A,B,C,D,E,F,G,H
+sample_period_microseconds = 5 #5 microseconds between measurements (200 kHz)
+sizeOfOneBuffer = int(0.2e6) #capture 1 second at 200 KHz
+numBuffersToCapture = int(10) #record data for 2 seconds. Code should work for up to 20*60 seconds at 200 kHz
 
 
-for i in np.arange(nSegments):
-	bufferAMaxArr.append((ctypes.c_int32 * maxSamples)())
-	bufferBMaxArr.append((ctypes.c_int32 * maxSamples)())
-	bufferCMaxArr.append((ctypes.c_int32 * maxSamples)())
-	bufferDMaxArr.append((ctypes.c_int32 * maxSamples)())
-	bufferEMaxArr.append((ctypes.c_int32 * maxSamples)())
-	bufferFMaxArr.append((ctypes.c_int32 * maxSamples)())
-	bufferGMaxArr.append((ctypes.c_int32 * maxSamples)())
-	bufferHMaxArr.append((ctypes.c_int32 * maxSamples)())
+#Items below need to be globally scoped
+totalSamples = sizeOfOneBuffer * numBuffersToCapture
+nextSample = 0 
+
+
+if (0 in meas_channels):
+	bufferCompleteA = np.zeros(shape=totalSamples, dtype=np.int16)
+	bufferAMax = np.zeros(shape = sizeOfOneBuffer, dtype=np.int16)
+
+if (1 in meas_channels):
+	bufferCompleteB = np.zeros(shape=totalSamples, dtype=np.int16)
+	bufferBMax = np.zeros(shape = sizeOfOneBuffer, dtype=np.int16)
+
+if (2 in meas_channels):
+	bufferCompleteC = np.zeros(shape=totalSamples, dtype=np.int16)
+	bufferCMax = np.zeros(shape = sizeOfOneBuffer, dtype=np.int16)
+
+if (3 in meas_channels):
+	bufferCompleteD = np.zeros(shape=totalSamples, dtype=np.int16)
+	bufferDMax = np.zeros(shape = sizeOfOneBuffer, dtype=np.int16)
+
+if (4 in meas_channels):
+	bufferCompleteE = np.zeros(shape=totalSamples, dtype=np.int16)
+	bufferEMax = np.zeros(shape = sizeOfOneBuffer, dtype=np.int16)
+
+if (5 in meas_channels):
+	bufferCompleteF = np.zeros(shape=totalSamples, dtype=np.int16)
+	bufferFMax = np.zeros(shape = sizeOfOneBuffer, dtype=np.int16)
+
+if (6 in meas_channels):
+	bufferCompleteG = np.zeros(shape=totalSamples, dtype=np.int16)
+	bufferGMax = np.zeros(shape = sizeOfOneBuffer, dtype=np.int16)
+
+if (7 in meas_channels):
+	bufferCompleteH = np.zeros(shape=totalSamples, dtype=np.int16)
+	bufferHMax = np.zeros(shape = sizeOfOneBuffer, dtype=np.int16)
 
 
 
 
-#To-do: figure out the delay between measurements / trigger offset
-# is it 
 
 def main():
 
-	start_time = time.time()
+	tot_start_time = time.time()
 
-
-
-	test_name = 'reed_may18_A01'
-
-
+###########################################
+#Prepare a results folder
+	test_name = 'reed_june8_A01'
 	dir_name = create_folder(test_name)
-	picoscope_measure(dir_name)
-	close_pico()
-
-	# plot_pico(dir_name)
-	# plot_pico('Results\\reed_march3_A01_save3')
 
 
+###########################################
+#Record PICOSCOPE data
+	stream_picoscope(dir_name)
+	print('Streaming and saving time: ', np.round((time.time() - tot_start_time)/60, 1))	
 
-	print('Elapsed time: ', np.round((time.time() - start_time)/60, 1))	
+###########################################
+#Plot results (warning - will crash if arrays are huge)
+	plot_start_time = time.time()
+	plot_pico(dir_name, 0, 0) #plot entire length, for now
+	print('Plotting time: ', np.round((time.time() - plot_start_time)/60, 1))	
+
+
+	#If you want to look at a result that already exists, enter the directory here and comment out the above results
+	# plot_pico('Results\\reed_may18_A01_save27', 0, 0.01) #20 minute acquisition
+
+
+	print('Elapsed time: ', np.round((time.time() - tot_start_time)/60, 2))	
+
 	return
 
 
 
 
 def create_folder(test_code_0):
-
 	#Create a folder for the test, make sure we do not overwrite any prior tests
+	#Append a number to the requested file name
+
 	keep_trying = True
 	code_num = 1
 	dir_name = 'Results\\'+test_code_0+'_save' + str(code_num)
@@ -101,204 +120,216 @@ def create_folder(test_code_0):
 
 
 
-def picoscope_measure(dir_name):
+def stream_picoscope(dir_name):
 
 ##################################################################
-#Step 1: open unit with PS4000AOPENUNIT()
+# Step 1. Open the oscilloscope using ps4000aOpenUnit(). 
 ##################################################################
 
-	# Open 4000 series PicoScope. Returns handle to chandle for use in future API functions
 	status["openunit"] = ps.ps4000aOpenUnit(ctypes.byref(chandle), None)
 
 	try: assert_pico_ok(status["openunit"])
 	except:
-	    powerStatus = status["openunit"]
-	    if powerStatus == 286: status["changePowerSource"] = ps.ps4000aChangePowerSource(chandle, powerStatus)
-	    else:raise
-	    assert_pico_ok(status["changePowerSource"])
+		powerStatus = status["openunit"]
+		if powerStatus == 286: status["changePowerSource"] = ps.ps4000aChangePowerSource(chandle, powerStatus)
+		else:raise
+		assert_pico_ok(status["changePowerSource"])
 
 
 ##################################################################
-#Step 2: select channels using PS4000ASETCHANNEL()
+# Step 2. Select channels, ranges and AC/DC coupling using ps4000aSetChannel(). 
 ##################################################################
-
 
 	#Arguments: handle, channel, enabled, COUPLING type,  range, analogOffset 	# handle = chandle, channel = PS4000a_CHANNEL_A = 0, enabled = 1,# coupling type = PS4000a_DC = 1,# range = PS4000a_2V = 7,# analogOffset = 0 V
-	status["setChA"] = ps.ps4000aSetChannel(chandle, 0, 1, 1, chRange, 0)
-	assert_pico_ok(status["setChA"])
+	if (0 in meas_channels):
+		status["setChA"] = ps.ps4000aSetChannel(chandle, 0, 1, 1, chRange, 0)
+		assert_pico_ok(status["setChA"])
 
-	status["setChB"] = ps.ps4000aSetChannel(chandle, 1, 1, 1, chRange, 0)
-	assert_pico_ok(status["setChB"])
+	if (1 in meas_channels):
+		status["setChB"] = ps.ps4000aSetChannel(chandle, 1, 1, 1, chRange, 0)
+		assert_pico_ok(status["setChB"])
 
-	status["setChC"] = ps.ps4000aSetChannel(chandle, 2, 1, 1, chRange, 0)
-	assert_pico_ok(status["setChC"])
+	if (2 in meas_channels):
+		status["setChC"] = ps.ps4000aSetChannel(chandle, 2, 1, 1, chRange, 0)
+		assert_pico_ok(status["setChC"])
 
-	status["setChD"] = ps.ps4000aSetChannel(chandle, 3, 1, 1, chRange, 0)
-	assert_pico_ok(status["setChD"])
+	if (3 in meas_channels):
+		status["setChD"] = ps.ps4000aSetChannel(chandle, 3, 1, 1, chRange, 0)
+		assert_pico_ok(status["setChD"])
 
-	status["setChE"] = ps.ps4000aSetChannel(chandle, 4, 1, 1, chRange, 0)
-	assert_pico_ok(status["setChE"])
+	if (4 in meas_channels):
+		status["setChE"] = ps.ps4000aSetChannel(chandle, 4, 1, 1, chRange, 0)
+		assert_pico_ok(status["setChE"])
 
-	status["setChF"] = ps.ps4000aSetChannel(chandle, 5, 1, 1, chRange, 0)
-	assert_pico_ok(status["setChF"])
+	if (5 in meas_channels):
+		status["setChF"] = ps.ps4000aSetChannel(chandle, 5, 1, 1, chRange, 0)
+		assert_pico_ok(status["setChF"])
 
-	status["setChG"] = ps.ps4000aSetChannel(chandle, 6, 1, 1, chRange, 0)
-	assert_pico_ok(status["setChG"])
+	if (6 in meas_channels):
+		status["setChG"] = ps.ps4000aSetChannel(chandle, 6, 1, 1, chRange, 0)
+		assert_pico_ok(status["setChG"])
 
-	status["setChH"] = ps.ps4000aSetChannel(chandle, 7, 1, 1, chRange, 0)
-	assert_pico_ok(status["setChH"])
+	if (7 in meas_channels):
+		status["setChH"] = ps.ps4000aSetChannel(chandle, 7, 1, 1, chRange, 0)
+		assert_pico_ok(status["setChH"])
 
-
-##################################################################
-#Step 3: " Set the number of memory segments equal to or greater than the number of captures required using ps4000aMemorySegments(). Use ps4000aSetNoOfCaptures() BEFORE EACH RUN to specify the number of waveforms to capture"
-##################################################################
-
-	nMaxSamples=ctypes.c_int32()# returns the number of samples that are available in each segment.
-	status["memorySegments"] = ps.ps4000aMemorySegments(chandle, nSegments, ctypes.byref(nMaxSamples))
-	assert_pico_ok(status["memorySegments"])
-
-	status["noOfCaptures"] = ps.ps4000aSetNoOfCaptures(chandle, nSegments )
-	assert_pico_ok(status["noOfCaptures"])
 
 
 ##################################################################
-#Step 4: Set timebase using PS4000AGETTIMEBASE() - "This will indicate the number of samples per channel available for each segment"
+# Step 3. Use the trigger setup functions [1] [2] [3] [4] to set up the trigger if required. 
 ##################################################################
 
-	# Get timebase information - 	# handle = chandle, # timebase = 8 = timebase, # noSamples = maxSamples,# pointer to timeIntervalNanoseconds = ctypes.byref(timeIntervalns),# pointer to maxSamples = ctypes.byref(returnedMaxSamples),# segment index = 0,
-	returnedMaxSamples = ctypes.c_int32()
-	status["getTimebase2"] = ps.ps4000aGetTimebase2(chandle, timebase, maxSamples, ctypes.byref(timeIntervalns), ctypes.byref(returnedMaxSamples), 0)
-	assert_pico_ok(status["getTimebase2"])
-
-
-##################################################################
-#Step 5: Set up trigger, can use PS4000ASETSIMPLETRIGGER 
-##################################################################
-	print('To-do: is this causing a delay between blocks? or does trigger only happen on first block?')
 	#Trigger arguments: handle, enable, source, threshold, direction, delay, autoTrigger_ms
 	status["trigger"] = ps.ps4000aSetSimpleTrigger(chandle, 1, 0, 1024, 2, 0, 1) #was 100 ms autotrigger_ms
 	assert_pico_ok(status["trigger"])
 
-##################################################################
-#Step 8(!): Use PS4000ASETDATABUFFER() to tell the driver where your memory buffers are
-#Call the function once for each channel/segment combination for which you require data.
-#For greater efficiency when doing multiple captures, you can call this function outside the loop, after step 5.
-##################################################################
-
-
-	for i in np.arange(nSegments):
-		# (no s) arguments: handle, channel, buffer, bufferlength, segment index, mode
-		status["setDataBufferA"] = ps.ps4000aSetDataBuffer(chandle, 0, ctypes.byref(bufferAMaxArr[i]),maxSamples, i , 0)
-		assert_pico_ok(status["setDataBufferA"])
-
-		status["setDataBufferB"] = ps.ps4000aSetDataBuffer(chandle, 1, ctypes.byref(bufferBMaxArr[i]), maxSamples, i , 0)
-		assert_pico_ok(status["setDataBufferB"])
-
-		status["setDataBufferC"] = ps.ps4000aSetDataBuffer(chandle, 2, ctypes.byref(bufferCMaxArr[i]), maxSamples, i , 0)
-		assert_pico_ok(status["setDataBufferC"])
-
-		status["setDataBufferD"] = ps.ps4000aSetDataBuffer(chandle, 3, ctypes.byref(bufferDMaxArr[i]), maxSamples, i , 0)
-		assert_pico_ok(status["setDataBufferD"])
-
-		status["setDataBufferE"] = ps.ps4000aSetDataBuffer(chandle, 4, ctypes.byref(bufferEMaxArr[i]), maxSamples, i , 0)
-		assert_pico_ok(status["setDataBufferE"])
-
-		status["setDataBufferF"] = ps.ps4000aSetDataBuffer(chandle, 5, ctypes.byref(bufferFMaxArr[i]), maxSamples, i , 0)
-		assert_pico_ok(status["setDataBufferF"])
-
-		status["setDataBufferG"] = ps.ps4000aSetDataBuffer(chandle, 6, ctypes.byref(bufferGMaxArr[i]), maxSamples, i , 0)
-		assert_pico_ok(status["setDataBufferG"])
-
-		status["setDataBufferH"] = ps.ps4000aSetDataBuffer(chandle, 7, ctypes.byref(bufferHMaxArr[i]), maxSamples, i , 0)
-		assert_pico_ok(status["setDataBufferH"])
-
 
 ##################################################################
-#Step 6: Start scope using "PS4000ARUNBLOCK"
-# Once all the waveforms have been captured, but ready is not complete, call ps4000aGetNoOfProcessedCaptures() to obtain the number of captures processed on the PC.
+# Step 4. Call ps4000aSetDataBuffer() to tell the driver where your data buffer is. 
 ##################################################################
 
-	status["runBlock"] = ps.ps4000aRunBlock(chandle, 0, maxSamples, timebase, None, 0, None, None)
-	assert_pico_ok(status["runBlock"])
+	memory_segment = 0 #?
 
-##################################################################
-#Step 7: Wait until scope is ready using PSA4000ABLOCKREADY()
-# Note - using ISREADY here
-##################################################################
+	if (0 in meas_channels):
+		status["setDataBuffersA"] = ps.ps4000aSetDataBuffers(chandle, ps.PS4000A_CHANNEL['PS4000A_CHANNEL_A'], bufferAMax.ctypes.data_as(ctypes.POINTER(ctypes.c_int16)), None, sizeOfOneBuffer, memory_segment, ps.PS4000A_RATIO_MODE['PS4000A_RATIO_MODE_NONE'])
+		assert_pico_ok(status["setDataBuffersA"])
 
-	# Check for data collection to finish using ps4000aIsReady
-	ready = ctypes.c_int32(0)
-	check = ctypes.c_int32(0)
-	while ready.value == check.value:
-	    status["isReady"] = ps.ps4000aIsReady(chandle, ctypes.byref(ready))
+	if (1 in meas_channels):
+		status["setDataBuffersB"] = ps.ps4000aSetDataBuffers(chandle, ps.PS4000A_CHANNEL['PS4000A_CHANNEL_B'], bufferBMax.ctypes.data_as(ctypes.POINTER(ctypes.c_int16)), None, sizeOfOneBuffer, memory_segment, ps.PS4000A_RATIO_MODE['PS4000A_RATIO_MODE_NONE'])
+		assert_pico_ok(status["setDataBuffersB"])
+
+	if (2 in meas_channels):
+		status["setDataBuffersC"] = ps.ps4000aSetDataBuffers(chandle, ps.PS4000A_CHANNEL['PS4000A_CHANNEL_C'], bufferCMax.ctypes.data_as(ctypes.POINTER(ctypes.c_int16)), None, sizeOfOneBuffer, memory_segment, ps.PS4000A_RATIO_MODE['PS4000A_RATIO_MODE_NONE'])
+		assert_pico_ok(status["setDataBuffersC"])
+
+	if (3 in meas_channels):
+		status["setDataBuffersD"] = ps.ps4000aSetDataBuffers(chandle, ps.PS4000A_CHANNEL['PS4000A_CHANNEL_D'], bufferDMax.ctypes.data_as(ctypes.POINTER(ctypes.c_int16)), None, sizeOfOneBuffer, memory_segment, ps.PS4000A_RATIO_MODE['PS4000A_RATIO_MODE_NONE'])
+		assert_pico_ok(status["setDataBuffersD"])
+
+	if (4 in meas_channels):
+		status["setDataBuffersE"] = ps.ps4000aSetDataBuffers(chandle, ps.PS4000A_CHANNEL['PS4000A_CHANNEL_E'], bufferEMax.ctypes.data_as(ctypes.POINTER(ctypes.c_int16)), None, sizeOfOneBuffer, memory_segment, ps.PS4000A_RATIO_MODE['PS4000A_RATIO_MODE_NONE'])
+		assert_pico_ok(status["setDataBuffersE"])
+
+	if (5 in meas_channels):
+		status["setDataBuffersF"] = ps.ps4000aSetDataBuffers(chandle, ps.PS4000A_CHANNEL['PS4000A_CHANNEL_F'], bufferFMax.ctypes.data_as(ctypes.POINTER(ctypes.c_int16)), None, sizeOfOneBuffer, memory_segment, ps.PS4000A_RATIO_MODE['PS4000A_RATIO_MODE_NONE'])
+		assert_pico_ok(status["setDataBuffersF"])
+
+	if (6 in meas_channels):
+		status["setDataBuffersG"] = ps.ps4000aSetDataBuffers(chandle, ps.PS4000A_CHANNEL['PS4000A_CHANNEL_G'], bufferGMax.ctypes.data_as(ctypes.POINTER(ctypes.c_int16)), None, sizeOfOneBuffer, memory_segment, ps.PS4000A_RATIO_MODE['PS4000A_RATIO_MODE_NONE'])
+		assert_pico_ok(status["setDataBuffersG"])
+
+	if (7 in meas_channels):
+		status["setDataBuffersH"] = ps.ps4000aSetDataBuffers(chandle, ps.PS4000A_CHANNEL['PS4000A_CHANNEL_H'], bufferHMax.ctypes.data_as(ctypes.POINTER(ctypes.c_int16)), None, sizeOfOneBuffer, memory_segment, ps.PS4000A_RATIO_MODE['PS4000A_RATIO_MODE_NONE'])
+		assert_pico_ok(status["setDataBuffersH"])
+
 
 
 ##################################################################
-#Step 9: Transfer blocks of data using PS4000AGETVALUESBULK()
-# Note - step 8 is moved earlier
+# Step 5. Set up downsampling and start the oscilloscope running using ps4000aRunStreaming(). 
 ##################################################################
 
-	overflow = (ctypes.c_int32 * nSegments)()# create overflow loaction
-	cmaxSamples = ctypes.c_int32(maxSamples) # create converted type maxSamples
-	toSegmentIndex = nSegments-1 
-	status["getValuesBulk"] = ps.ps4000aGetValuesBulk(chandle, ctypes.byref(cmaxSamples), 0, toSegmentIndex, 0, 0, ctypes.byref(overflow))
-	assert_pico_ok(status["getValuesBulk"])
+	# sampleInterval = ctypes.c_int32(sample_period_microseconds)
+	sampleInterval = ctypes.c_int16(sample_period_microseconds)	
+	sampleUnits = ps.PS4000A_TIME_UNITS['PS4000A_US']
+	maxPreTriggerSamples = 0 # We are not triggering:
+	autoStopOn = 1
+	downsampleRatio = 1	# No downsampling:
+	status["runStreaming"] = ps.ps4000aRunStreaming(chandle, ctypes.byref(sampleInterval), sampleUnits, maxPreTriggerSamples, totalSamples, autoStopOn, downsampleRatio, ps.PS4000A_RATIO_MODE['PS4000A_RATIO_MODE_NONE'], sizeOfOneBuffer)
+	assert_pico_ok(status["runStreaming"])
+
+	actualSampleInterval = sampleInterval.value
+
+##################################################################
+# Step 6. Call ps4000aGetStreamingLatestValues() to get data. 
+##################################################################
+
+	autoStopOuter = False
+	wasCalledBack = False
+
+	cFuncPtr = ps.StreamingReadyType(pico_streaming_callback) 	# Convert the python function into a C function pointer.
+
+	# Fetch data from the driver in a loop, copying it out of the registered buffers and into our complete one.
+	while nextSample < totalSamples and not autoStopOuter:
+		wasCalledBack = False
+		status["getStreamingLastestValues"] = ps.ps4000aGetStreamingLatestValues(chandle, cFuncPtr, None)
+		if not wasCalledBack:
+			time.sleep(0.01)
+
+	print('Data has been retrieved from scope')
+
 
 
 ##################################################################
-#Step 10: Retrieve time offset for each data segment using PS4000AGETVLUESTRIGGERTIMEOFFSETBULK64()
-# I am not doing this
+# Step 7. Process data returned to your application's function. This example is using autoStop, so after the driver has received all the data points requested by the application, it stops the streaming. 
 ##################################################################
-	print('To-Do: this section doesnt seem to work correctly')
-	Times_upper = (ctypes.c_int32*nSegments)()
-	Times_lower = (ctypes.c_int32*nSegments)()
-	TimeUnits = ctypes.c_char()
-	status["GetValuesTriggerTimeOffsetBulk"] = ps.ps4000aGetValuesTriggerTimeOffsetBulk(chandle, ctypes.byref(Times_upper), ctypes.byref(Times_lower), ctypes.byref(TimeUnits), 0, toSegmentIndex)
-	assert_pico_ok(status["GetValuesTriggerTimeOffsetBulk"])
+	
+	saving_start_time = time.time()
 
-##################################################################
-#Step 11: display data
-##################################################################
+	#Ranges: "PS4000_10MV", "PS4000_20MV", "PS4000_50MV", "PS4000_100MV", "PS4000_200MV", "PS4000_500MV", "PS4000_1V",  "PS4000_2V"
+	if chRange == 0: adc_mv_range = 10
+	elif chRange == 1: adc_mv_range = 20	
+	elif chRange == 2: adc_mv_range = 50
+	elif chRange == 3: adc_mv_range = 100
+	elif chRange == 4: adc_mv_range = 200			
+	elif chRange == 5: adc_mv_range = 500	
+	elif chRange == 6: adc_mv_range = 1000	
+	elif chRange == 7: adc_mv_range = 2000	
 
-	# find maximum ADC count value
-	maxADC = ctypes.c_int16()	
-	status["maximumValue"] = ps.ps4000aMaximumValue(chandle, ctypes.byref(maxADC))
+	pico_adc_res = 32767 #+-, value used in "ps4824BlockExample"
 
-	#Save data in each block of memory
-	for i in np.arange(nSegments):
-		# convert ADC counts data to mV
-		adc2mVChAMax =  adc2mV(bufferAMaxArr[i], chRange, maxADC)
-		adc2mVChBMax =  adc2mV(bufferBMaxArr[i], chRange, maxADC)
-		adc2mVChCMax =  adc2mV(bufferCMaxArr[i], chRange, maxADC)
-		adc2mVChDMax =  adc2mV(bufferDMaxArr[i], chRange, maxADC)
-		adc2mVChEMax =  adc2mV(bufferEMaxArr[i], chRange, maxADC)
-		adc2mVChFMax =  adc2mV(bufferFMaxArr[i], chRange, maxADC)
-		adc2mVChGMax =  adc2mV(bufferGMaxArr[i], chRange, maxADC)
-		adc2mVChHMax =  adc2mV(bufferHMaxArr[i], chRange, maxADC)
-		time_ns = np.linspace(0, (cmaxSamples.value) * timeIntervalns.value, cmaxSamples.value)
-
-		np.save(dir_name + '\\time_ns' + str(i) + '.npy', time_ns)
-		np.save(dir_name + '\\ChA_' + str(i) + '.npy', adc2mVChAMax[:])
-		np.save(dir_name + '\\ChB_' + str(i) + '.npy', adc2mVChBMax[:])
-		np.save(dir_name + '\\ChC_' + str(i) + '.npy', adc2mVChCMax[:])
-		np.save(dir_name + '\\ChD_' + str(i) + '.npy', adc2mVChDMax[:])
-		np.save(dir_name + '\\ChE_' + str(i) + '.npy', adc2mVChEMax[:])
-		np.save(dir_name + '\\ChF_' + str(i) + '.npy', adc2mVChFMax[:])
-		np.save(dir_name + '\\ChG_' + str(i) + '.npy', adc2mVChGMax[:])
-		np.save(dir_name + '\\ChH_' + str(i) + '.npy', adc2mVChHMax[:])
+	# Convert ADC counts data to mV
+	if (0 in meas_channels):
+		ChA_mv = bufferCompleteA[:]*(adc_mv_range/pico_adc_res)
+	if (1 in meas_channels):
+		ChB_mv = bufferCompleteB[:]*(adc_mv_range/pico_adc_res)
+	if (2 in meas_channels):
+		ChC_mv = bufferCompleteC[:]*(adc_mv_range/pico_adc_res)
+	if (3 in meas_channels):
+		ChD_mv = bufferCompleteD[:]*(adc_mv_range/pico_adc_res)
+	if (4 in meas_channels):
+		ChE_mv = bufferCompleteE[:]*(adc_mv_range/pico_adc_res)
+	if (5 in meas_channels):
+		ChF_mv = bufferCompleteF[:]*(adc_mv_range/pico_adc_res)
+	if (6 in meas_channels):
+		ChG_mv = bufferCompleteG[:]*(adc_mv_range/pico_adc_res)
+	if (7 in meas_channels):
+		ChH_mv = bufferCompleteH[:]*(adc_mv_range/pico_adc_res)
 
 
+	# # Create time data
+	time_micros = np.linspace(0, (totalSamples) * actualSampleInterval, totalSamples)
 
 
+	np.save(dir_name + '\\time_micros.npy', time_micros)
+	if (0 in meas_channels):
+		np.save(dir_name + '\\ChA_mv.npy', ChA_mv)
+	if (1 in meas_channels):
+		np.save(dir_name + '\\ChB_mv.npy', ChB_mv)
+	if (2 in meas_channels):
+		np.save(dir_name + '\\ChC_mv.npy', ChC_mv)
+	if (3 in meas_channels):
+		np.save(dir_name + '\\ChD_mv.npy', ChD_mv)
+	if (4 in meas_channels):
+		np.save(dir_name + '\\ChE_mv.npy', ChE_mv)
+	if (5 in meas_channels):
+		np.save(dir_name + '\\ChF_mv.npy', ChF_mv)
+	if (6 in meas_channels):
+		np.save(dir_name + '\\ChG_mv.npy', ChG_mv)
+	if (7 in meas_channels):
+		np.save(dir_name + '\\ChH_mv.npy', ChH_mv)
 
 
-def close_pico():
-
+	# handle = chandle
 	status["stop"] = ps.ps4000aStop(chandle)
 	assert_pico_ok(status["stop"])
+
+	# Disconnect the scope
 	status["close"] = ps.ps4000aCloseUnit(chandle)
 	assert_pico_ok(status["close"])
 	print(status)
+
+	print('Saving data time: ', np.round((time.time() - saving_start_time)/60, 1))	
+
 
 	return
 
@@ -306,40 +337,124 @@ def close_pico():
 
 
 
+def pico_streaming_callback(handle, noOfSamples, startIndex, overflow, triggerAt, triggered, autoStop, param):
+	global nextSample, autoStopOuter, wasCalledBack
 
-def plot_pico(dir_name):
+	wasCalledBack = True
+	destEnd = nextSample + noOfSamples
+	sourceEnd = startIndex + noOfSamples
 
+	if (0 in meas_channels):
+		bufferCompleteA[nextSample:destEnd] = bufferAMax[startIndex:sourceEnd]
+	if (1 in meas_channels):
+		bufferCompleteB[nextSample:destEnd] = bufferBMax[startIndex:sourceEnd]
+	if (2 in meas_channels):
+		bufferCompleteC[nextSample:destEnd] = bufferCMax[startIndex:sourceEnd]
+	if (3 in meas_channels):
+		bufferCompleteD[nextSample:destEnd] = bufferDMax[startIndex:sourceEnd]
+	if (4 in meas_channels):
+		bufferCompleteE[nextSample:destEnd] = bufferEMax[startIndex:sourceEnd]
+	if (5 in meas_channels):
+		bufferCompleteF[nextSample:destEnd] = bufferFMax[startIndex:sourceEnd]
+	if (6 in meas_channels):
+		bufferCompleteG[nextSample:destEnd] = bufferGMax[startIndex:sourceEnd]
+	if (7 in meas_channels):
+		bufferCompleteH[nextSample:destEnd] = bufferHMax[startIndex:sourceEnd]
+
+
+	nextSample += noOfSamples
+	if autoStop:
+		autoStopOuter = True
+
+	return
+
+
+
+
+def plot_pico(dir_name, start_time_frac, end_time_frac):
+	#Since the files are so big, cannot plot the entire acoustic data for an extended measurement.
+	#This function will load and plot the results between the start frac (e.g. 0.1) and end frac (e.g. 0.8)
+	#If the requested number of points is too large, function will return without plotting
 
 	plt.figure()
 
 	color_code = 0
-	for i in np.arange(nSegments):
 
-		time_vec = (1e-9)*np.load(dir_name + '\\time_ns' + str(i) + '.npy') #units of nanoseconds
-		ChA = np.load(dir_name + '\\ChA_' + str(i) + '.npy')
-		ChB = np.load(dir_name + '\\ChB_' + str(i) + '.npy')
-		ChC = np.load(dir_name + '\\ChC_' + str(i) + '.npy')
-		ChD = np.load(dir_name + '\\ChD_' + str(i) + '.npy')
-		ChE = np.load(dir_name + '\\ChE_' + str(i) + '.npy')
-		ChF = np.load(dir_name + '\\ChF_' + str(i) + '.npy')
-		ChG = np.load(dir_name + '\\ChG_' + str(i) + '.npy')
-		ChH = np.load(dir_name + '\\ChH_' + str(i) + '.npy')
+	time_vec = (1e-6)*np.load(dir_name + '\\time_micros.npy') #units of nanoseconds
+	
+	try:
+		if (0 in meas_channels):
+			ChA_mv = np.load(dir_name + '\\ChA_mv.npy')
+			print('Ch. A loaded')
+		if (1 in meas_channels):
+			ChB_mv = np.load(dir_name + '\\ChB_mv.npy')
+			print('Ch. B loaded')
+		if (2 in meas_channels):
+			ChC_mv = np.load(dir_name + '\\ChC_mv.npy')
+			print('Ch. C loaded')
+		if (3 in meas_channels):
+			ChD_mv = np.load(dir_name + '\\ChD_mv.npy')
+			print('Ch. D loaded')
+		if (4 in meas_channels):
+			ChE_mv = np.load(dir_name + '\\ChE_mv.npy')
+			print('Ch. E loaded')
+		if (5 in meas_channels):
+			ChF_mv = np.load(dir_name + '\\ChF_mv.npy')
+			print('Ch. F loaded')
+		if (6 in meas_channels):
+			ChG_mv = np.load(dir_name + '\\ChG_mv.npy')
+			print('Ch. G loaded')
+		if (7 in meas_channels):
+			ChH_mv = np.load(dir_name + '\\ChH_mv.npy')
+			print('Ch. H loaded')
 
-		colors = plt.cm.jet(np.linspace(0.1, 0.9, 8*nSegments))
+	except:
+		print('Tried to load a channel data that did not exist')
+		print('Please modify meas_channels array')
+
+
+
+
+	print('Data has been loaded, size = ', np.size(time_vec))
+
+
+	if (start_time_frac == 0) and (end_time_frac == 0):
+		start_ind = 0
+		end_ind = np.size(time_vec)
+
+	else:
+		start_ind = int(start_time_frac*np.size(time_vec))
+		end_ind = int(end_time_frac*np.size(time_vec))
+
+
+	if (end_ind - start_ind) > 10e6:
+		print('Attempting to plot too many points! (', end_ind - start_ind, '), returning to main')
+	else:
+
+		colors = plt.cm.jet(np.linspace(0.1, 0.9, 8))
+
 		# Plot data from channel A and B
-		plt.plot(time_vec, ChA, color=colors[i], label = 'Ch A-' + str(i))
-		plt.plot(time_vec, ChB, color=colors[nSegments + i],  label = 'Ch B-' + str(i))
-		plt.plot(time_vec, ChC, color=colors[2*nSegments + i], label = 'Ch C-' + str(i))
-		plt.plot(time_vec, ChD, color=colors[3*nSegments + i],  label = 'Ch D-' + str(i))
-		plt.plot(time_vec, ChE, color=colors[4*nSegments + i], label = 'Ch E-' + str(i))
-		plt.plot(time_vec, ChF, color=colors[5*nSegments + i], label = 'Ch F-' + str(i))
-		plt.plot(time_vec, ChG, color=colors[6*nSegments + i], label = 'Ch G-' + str(i))
-		plt.plot(time_vec, ChH, color=colors[7*nSegments + i],  label = 'Ch H-' + str(i))
+		if (0 in meas_channels):
+			plt.plot(time_vec[start_ind:end_ind], ChA_mv[start_ind:end_ind], color=colors[0], label = 'Ch A')
+		if (1 in meas_channels):			
+			plt.plot(time_vec[start_ind:end_ind], ChB_mv[start_ind:end_ind], color=colors[1],  label = 'Ch B')
+		if (2 in meas_channels):			
+			plt.plot(time_vec[start_ind:end_ind], ChC_mv[start_ind:end_ind], color=colors[2], label = 'Ch C')
+		if (3 in meas_channels):			
+			plt.plot(time_vec[start_ind:end_ind], ChD_mv[start_ind:end_ind], color=colors[3],  label = 'Ch D')
+		if (4 in meas_channels):			
+			plt.plot(time_vec[start_ind:end_ind], ChE_mv[start_ind:end_ind], color=colors[4], label = 'Ch E')
+		if (5 in meas_channels):			
+			plt.plot(time_vec[start_ind:end_ind], ChF_mv[start_ind:end_ind], color=colors[5], label = 'Ch F')
+		if (6 in meas_channels):		
+			plt.plot(time_vec[start_ind:end_ind], ChG_mv[start_ind:end_ind], color=colors[6], label = 'Ch G')
+		if (7 in meas_channels):			
+			plt.plot(time_vec[start_ind:end_ind], ChH_mv[start_ind:end_ind], color=colors[7],  label = 'Ch H')
 
-	plt.legend(loc='upper center')
-	plt.xlabel('Time (s)')
-	plt.ylabel('Voltage (mV)')
-	plt.show()
+		plt.legend(loc='upper center')
+		plt.xlabel('Time (s)')
+		plt.ylabel('Voltage (mV)')
+		plt.savefig(dir_name + '\\pico_plot.pdf')
 
 
 	return
