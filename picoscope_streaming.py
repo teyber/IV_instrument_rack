@@ -16,16 +16,13 @@ chandle = ctypes.c_int16()
 status = {}
 
 
-#USER INPUT HERE: ADC range #Ranges: "PS4000_10MV", "PS4000_20MV", "PS4000_50MV", "PS4000_100MV", "PS4000_200MV", "PS4000_500MV", "PS4000_1V",  "PS4000_2V",
-chRange = 1
 
-#USER INPUT HERE: sampling frequency, recording time
-
-meas_channels = [2,3,7]
-
+#USER INPUT HERE:
+chRange = 1#USER INPUT HERE: ADC range #Ranges: "PS4000_10MV", "PS4000_20MV", "PS4000_50MV", "PS4000_100MV", "PS4000_200MV", "PS4000_500MV", "PS4000_1V",  "PS4000_2V",
+meas_channels = [0,1,2,3,4,5,6,7] #0,1,2,3,4,5,6,7 for A,B,C,D,E,F,G,H
 sample_period_microseconds = 5 #5 microseconds between measurements (200 kHz)
 sizeOfOneBuffer = int(0.2e6) #capture 1 second at 200 KHz
-numBuffersToCapture = int(1) #record data for 2 seconds. Code should work for up to 20*60 seconds at 200 kHz
+numBuffersToCapture = int(10) #record data for 2 seconds. Code should work for up to 20*60 seconds at 200 kHz
 
 
 #Items below need to be globally scoped
@@ -75,7 +72,7 @@ def main():
 
 ###########################################
 #Prepare a results folder
-	test_name = 'reed_may20_A01'
+	test_name = 'reed_june8_A01'
 	dir_name = create_folder(test_name)
 
 
