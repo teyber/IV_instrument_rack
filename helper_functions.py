@@ -3,6 +3,39 @@
 import visa
 import numpy as np
 import time
+import os
+
+
+
+
+
+##########################################################################################
+#Create results folder
+
+def create_folder(test_code_0):
+	#Create a folder for the test, make sure we do not overwrite any prior tests
+	#Append a number to the requested file name
+
+	keep_trying = True
+	code_num = 1
+	dir_name = 'Results\\'+test_code_0+'_save' + str(code_num)
+	while keep_trying == True:
+		dir_name = 'Results\\'+ test_code_0 + '_save' + str(code_num)
+		if os.path.exists(dir_name) and code_num < 10000:
+			code_num += 1
+		else:
+			os.makedirs(dir_name)
+			keep_trying = False
+
+	print('Saving results to directory: ', dir_name)
+	return dir_name
+
+
+
+#End results folder
+##########################################################################################
+
+
 
 
 
@@ -216,8 +249,6 @@ def modify_sorenson_limits(sorenson_psu, max_I, max_V):
 
 
 
-##########################################################################################
-#Start Picoscope
 
 
 
