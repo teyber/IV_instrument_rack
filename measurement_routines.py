@@ -9,16 +9,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import differential_evolution
 
-
+from helper_functions import * 
 
 
 
 ##########################################################################################
 #Start Yokogowa ramp
 
-def quick_psu_ramp(I_amps, up_ramp_time, dwell_time, down_ramp_time, setup_time):
+def quick_psu_ramp(rm, I_amps, up_ramp_time, dwell_time, down_ramp_time, setup_time):
 
-	rm = visa.ResourceManager()
 	sorenson = init_sorenson_psu(rm, max_voltage=5)
 
 	if setup_time < 5:
@@ -66,62 +65,39 @@ def quick_psu_ramp(I_amps, up_ramp_time, dwell_time, down_ramp_time, setup_time)
 
 
 ##########################################################################################
-#IC curve
+#IV curve
 
-def run_IV_curve(I_start, I_end, I_inc, test_code = 'test_tape'):
+def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code, disable_psu = True, safe_mode = True):
 
 
 	#IV parameters
+	I_vec = np.arange(I_start, I_end + I_inc, I_inc)
 	V_sample_max = 1e-3 #Disable PSU if voltage exceeds this
-	t_dwell = 0.2 #200 milliseconds
+	t_dwell = 1.0 #1 second
+
+	#Create a folder for this result (see helper_functions)
+	dir_name = create_folder(test_code)
 
 
-
-	#Initialize instruments
-	rm = visa.ResourceManager()
-	nanovm = init_nanovm(rm, max_voltage = 0.01, NPLC = 1)
-	dvm = init_dvm(rm, max_voltage = 0.1, NPLC = 0.1)
-	sorenson = init_sorenson_psu(rm, max_voltage=3)
-
-
-	# #Create folder if it doesn't exist
-	# dir_name = 'Results\\' + test_code
-	# if os.path.exists(dir_name):
-	# 	print('Folder with test name already exists')
-	# 	print('0 - return to main loop')		
-	# 	print('1 - Continue')
-	# 	folder_warning = input('What would you like to do?')
-
-	# 	if folder_conflict == 1: 
-	# 		continue
-	# 	else: return
-
-	# else:
-	# 	os.makedirs(dir_name)
-
-
-	# #Ask user to double check current range before proceeding
-	# I_vec = np.arange(I_start, I_end + I_inc, I_inc)
-	# print('Safety check')
-	# print('Programmed current range [A]: ', np.min(I_vec), np.max(I_vec))
-	# print('Programmed voltage threshold [V]: ', V_sample_max)
-	# print('\n')
-	# print('0 - return to main loop')		
-	# print('1 - Continue with IV curve')
-	# current_warning = input('What would you like to do?')
-
-	# if current_warning == 1: 
-	# 	print('Continuing with IV curve - systems will be energized')
-	# 	continue
-
-	# else: return
+	# Ask user to double check current range before proceeding
+	print('------------ Safety check ------------')
+	print('Programmed current range [A]: ', np.min(I_vec), np.max(I_vec))
+	print('Programmed voltage threshold [V], dwell [s]: ', V_sample_max, t_dwell)
+	print('MANUALLY CHECK SHUNT RESISTOR IN GET_DVM()!')
+	print('0 - Exit')		
+	print('1 - Energize systems')
+	current_warning = input('Is this correct? ')
+	if current_warning == 1: 
+		print('Continuing with IV curve - systems will be energized')
+		continue
+	else: return
 
 	#Initialize vectors to be filled in IV curve
 	num_points = np.size(I_vec)
 	I_shunt = np.zeros(num_points)
 	Vsample_1 = np.zeros(num_points)
 	Vsample_2 = np.zeros(num_points)
-	time_array = np.zeros()
+	time_array = np.zeros(num_points)
 
 	#Check starting point before telling power supply to ramp
 	time_array[0] = time.time()
@@ -133,12 +109,14 @@ def run_IV_curve(I_start, I_end, I_inc, test_code = 'test_tape'):
 	if (np.abs(Vsample_1[0]) > V_sample_max):
 		print('Error! Channel 1 is greater than voltage threshold. Returning to main.')
 		print('V_sample_max, V_sample1, V_sample2: ', V_sample_max, Vsample_1[0], Vsample_2[0])
-		return
+		ramp_sorenson_psu(sorenson_psu, I_ramp_time=2, I_ramp_mag=0)
+		return 0, 0, 0, 0
 
 	if (np.abs(Vsample_2[0]) > V_sample_max):
 		print('Error! Channel 2 is greater than voltage threshold. Returning to main.')
 		print('V_sample_max, V_sample1, V_sample2: ', V_sample_max, Vsample_1[0], Vsample_2[0])
-		return
+		ramp_sorenson_psu(sorenson_psu, I_ramp_time=2, I_ramp_mag=0)
+		return 0, 0, 0, 0
 
 
 	#Create a figure that will be updated live
@@ -158,31 +136,33 @@ def run_IV_curve(I_start, I_end, I_inc, test_code = 'test_tape'):
 	ax1.set_ylim([y_min, y_max])
 	ax1.legend()
 
-	#Start IV curve
+
+	#Start IV curve UP
 	for i in np.arange(num_points):
 
 		#Set power supply to next current
-		set_sorenson_psu(sorenson_psu, I_vec[i])
+		inter_point_ramp_time = 0.25
+		ramp_sorenson_psu(sorenson_psu, inter_point_ramp_time, I_ramp_mag=I_vec[i]) # set_sorenson_psu(sorenson_psu, I_vec[i])
 
 		#Dwell to eliminate inductive voltage
-		time.sleep(t_dwell)
+		time.sleep(t_dwell + inter_point_ramp_time)
 
 		#Get voltages from meters
 		time_array[i] = time.time()
 		I_shunt[i] = get_dvm(dvm)[1]
 		Vsample_1[i] = get_nanovm(nanovm, ch_num = 1)
-		Vsample_2[i] = get_nanovm(nanovm, ch_num = 1)
+		Vsample_2[i] = get_nanovm(nanovm, ch_num = 2)
 
 		#Print values. Could be used to recover valuable data if program crashes
-		print(i, time_array[i], I_shunt[i], Vsample_1[i], Vsample_2[i])
+		print('i, t, I, V1, V2', i, time_array[i]-time_array[0], I_shunt[i], Vsample_1[i], Vsample_2[i])
 
 		#See if voltage threshold has been exceeded. If so, set PSU to 0 amps.
-		if (np.max((np.abs(Vsample_1[i]),np.abs(Vsample_1[i]))) > V_sample_max):
-			set_sorenson_psu(sorenson_psu, 0)
+		if ((np.abs(Vsample_1[i]) >= V_sample_max) or (np.abs(Vsample_2[i]) >= V_sample_max)):
+			ramp_sorenson_psu(sorenson_psu, 0.5, 0) #Ramp to 0 amps over 0.5 seconds
 			print('WARNING: sample threshold has been exceeded!')
 			print('V_sample_max, V_sample1, V_sample2: ', V_sample_max, Vsample_1[i], Vsample_2[i])
-			time.sleep(0.1)
-			break
+			np.savetxt(dir_name + '\\' +'EXCEEDED_IV_curve_.txt', np.vstack((time_array, I_shunt, Vsample_1, Vsample_2)))
+			return 0, 0, 0, 0
 
 		#Plot curve, update y axis limits if needed
 		if (np.max(Vsample_1) > y_max) or (np.max(Vsample_2) > y_max): 
@@ -197,56 +177,59 @@ def run_IV_curve(I_start, I_end, I_inc, test_code = 'test_tape'):
 		L2.set_ydata(Vsample_2[0:i])
 		L2.set_xdata(I_shunt[0:i])
 
-		plt.pause(0.01)
+		plt.pause(0.05)
 
 
-	plt.show()
-	plt.savefig(dir_name + '\\' +'plot_IV_curve.pdf')
-	plt.close()
+		# In safe mode, require user input to go to next point
+		if safe_mode == True:
+			print('Continue ramping?')
+			current_warning = input('Exit (0), or continue(1)')
+			if current_warning == 1: continue
+			else:
+				print('returning to main')
+				np.savetxt(dir_name + '\\' +'CANCELLED_IV_curve_.txt', np.vstack((time_array, I_shunt, Vsample_1, Vsample_2)))
+				return 0, 0, 0, 0
+	
+
 
 
 	#Ramp down, do not collect voltages along way
-	time.sleep(0.1)
-	down_ramp_time = 3
-	print('IV curve complete. Beginning ramp down for ' + str(down_ramp_time) + ' seconds')
-	ramp_sorenson_psu(sorenson_psu, I_ramp_time=down_ramp_time, I_ramp_mag=0)
-	time.sleep(down_ramp_time+1)
-	modify_sorenson_limits(sorenson_psu, max_I=0, max_V=0)
+
+	if disable_psu  == True: #if we are not going to ramp down
+		time.sleep(0.1)
+		down_ramp_time = 2
+		print('IV curve complete. Disabling PSU')
+		ramp_sorenson_psu(sorenson_psu, I_ramp_time=2, I_ramp_mag=0)
+		time.sleep(down_ramp_time+1)
+		modify_sorenson_limits(sorenson_psu, max_I=0, max_V=0)
+
+	else: 
+		print('IV curve complete. WARNING - Leaving power supply energized for down ramp')
+
 
 
 #Analye IV curve with curve fit
+	Ic_guess = 600 #amps
+
 	print('Ch1 analysis')
-	offset_ch1, resistance_ch1, Ic_ch1, n_ch1 = curve_fit_IV(I_shunt, Vsample_1, Ic_guess=1000, V_criterion=1e-6)
+	offset_ch1, resistance_ch1, Ic_ch1, n_ch1 = curve_fit_IV(I_shunt, Vsample_1, Ic_guess, V_criterion=1e-6)
 	
 	print('Ch2 analysis')
-	offset_ch2, resistance_ch2, Ic_ch2, n_ch2 = curve_fit_IV(I_shunt, Vsample_2, Ic_guess=1000, V_criterion=1e-6)
-
+	offset_ch2, resistance_ch2, Ic_ch2, n_ch2 = curve_fit_IV(I_shunt, Vsample_2, Ic_guess, V_criterion=1e-6)
 
 	#save output
-	code_num = 1
-	if os.path.exists(dir_name + '\\' + 'IV_curve_' + str(code_num)):
-		code_num += 1
-	else:
-		np.savetxt(dir_name + '\\' +'IV_curve_' + str(code_num) + '.txt', np.vstack((time_array, I_shunt, Vsample_1, Vsample_2)))	
-		np.savetxt(dir_name + '\\' +'ch1_fit_' + str(code_num) + '.txt', [offset_ch1, resistance_ch1, Ic_ch1, n_ch1])	
-		np.savetxt(dir_name + '\\' +'ch2_fit_' + str(code_num) + '.txt', [offset_ch2, resistance_ch2, Ic_ch2, n_ch2])	
+	np.savetxt(dir_name + '\\' +'IV_curve.txt', np.vstack((time_array, I_shunt, Vsample_1, Vsample_2)))	
+	np.savetxt(dir_name + '\\' +'ch1_fit.txt', [offset_ch1, resistance_ch1, Ic_ch1, n_ch1])	
+	np.savetxt(dir_name + '\\' +'ch2_fit.txt', [offset_ch2, resistance_ch2, Ic_ch2, n_ch2])	
 
+	#Save figure
+	plt.savefig(dir_name + '\\' +'plot_IV_curve.pdf')
+	# plt.show()
+	plt.close()
 
 
 	return time_array, I_shunt, Vsample_1, Vsample_2
 
-
-
-
-
-#Simple but useful function to print current voltages at start of IV curve or during cooldown 
-def get_meter_voltages(nanovm, dvm):
-
-	print(get_nanovm(nanovm, ch_num = 1))
-	print(get_nanovm(nanovm, ch_num = 2))
-	print(get_dvm(dvm))
-
-	return
 
 
 
@@ -263,8 +246,8 @@ def get_meter_voltages(nanovm, dvm):
 def curve_fit_IV(I_meas, V_meas, Ic_guess, V_criterion):
 
 	#Voltage offset, linear resistance, Ic and n value
-	bnds = ((-10e-3,10e-3), (1e-10,10e-3),(0.1*Ic_guess, 2*Ic_guess),(10,40))
-	sol = differential_evolution(curve_fit_obj, bounds = bnds_long, args = (I_meas, V_meas, V_criterion), strategy='best1bin', maxiter=200, popsize=300, tol=1e-4, seed=False, mutation=(0, 0.2), recombination=0.4, disp=False, polish = True, init = 'random', updating = 'deferred', workers = 3)
+	bnds = ((-30e-3,30e-3), (1e-10,10e-3),(0.1*Ic_guess, 5*Ic_guess),(5,40))
+	sol = differential_evolution(curve_fit_obj, bounds = bnds_long, args = (I_meas, V_meas, V_criterion), strategy='best1bin', maxiter=200, popsize=300, tol=1e-4, seed=False, mutation=(0, 0.2), recombination=0.4, disp=False, polish = True, init = 'random', updating = 'deferred', workers = 2)
 
 	offset_fit = sol.x[0]
 	resistance_fit = sol.x[1]
@@ -314,11 +297,10 @@ def curve_fit_obj(x, current, V_raw, V_criterion):
 #Start cooldown monitor
 
 
-def monitor_cooldown():
+def monitor_cooldown(rm):
 
 
-	#Initialize instruments
-	rm = visa.ResourceManager()
+	#Initialize instruments 
 	nanovm = init_nanovm(rm, max_voltage = 0.01, NPLC = 1)
 	dvm = init_dvm(rm, max_voltage = 0.1, NPLC = 0.1)
 	sorenson = init_sorenson_psu(rm, max_voltage=3)
