@@ -73,8 +73,7 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 	#IV parameters
 	I_vec = np.arange(I_start, I_end + I_inc, I_inc)
 	V_sample_max = 1e-3 #Disable PSU if voltage exceeds this
-	t_dwell = 0.5 #500 milliseconds
-
+	t_dwell = 1.0 #1 second
 
 	#Create a folder for this result (see helper_functions)
 	dir_name = create_folder(test_code)
@@ -142,10 +141,11 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 	for i in np.arange(num_points):
 
 		#Set power supply to next current
-		set_sorenson_psu(sorenson_psu, I_vec[i])
+		inter_point_ramp_time = 0.25
+		ramp_sorenson_psu(sorenson_psu, inter_point_ramp_time, I_ramp_mag=I_vec[i]) # set_sorenson_psu(sorenson_psu, I_vec[i])
 
 		#Dwell to eliminate inductive voltage
-		time.sleep(t_dwell)
+		time.sleep(t_dwell + inter_point_ramp_time)
 
 		#Get voltages from meters
 		time_array[i] = time.time()

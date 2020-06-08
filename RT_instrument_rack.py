@@ -29,11 +29,12 @@ def main():
 	sorenson = init_sorenson_psu(rm, max_voltage = 3)
 
 	#Ramp up and down
-	I_max = 20
+	safe_mode = True
+	I_max = 40
 	dA = 5
-	run_IV_curve(rm, nanovm, dvm, sorenson, 0, I_max, dA, test_code, disable_psu = False, safe_mode = True) #ramp up, leave PSU energized
+	run_IV_curve(rm, nanovm, dvm, sorenson, 0, I_max, dA, test_code, disable_psu = False, safe_mode) #ramp up, leave PSU energized
 	time.sleep(0.1)
-	run_IV_curve(rm, nanovm, dvm, sorenson, I_max, 0, -dA, test_code, disable_psu = True, safe_mode = True) #ramp up, leave PSU energized
+	run_IV_curve(rm, nanovm, dvm, sorenson, I_max, 0, -dA, test_code, disable_psu = True, safe_mode) #ramp up, leave PSU energized
 
 
 # Ramp PSU for CORC quench tests
