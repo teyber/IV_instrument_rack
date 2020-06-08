@@ -14,11 +14,6 @@ from measurement_routines import *
 def main():
 
 	rm = visa.ResourceManager()
-
-	cryo = rm.open_resource("TCPIP::169.254.58.10::gpib0,12::INSTR") #"TCPIP::192.168.100.1::1394::SOCKET"
-	cryo.write('*IDN?')
-	print(cryo.read())
-
 	
 
 # #monitor cooldown
@@ -28,38 +23,11 @@ def main():
 # #Run IV curve
 # 	time_array, I_shunt, Vsample_1, Vsample_2 = run_IV_curve(I_start=0, I_end=100, I_inc=5, test_code = 'test_tape')
 
-	#quick_psu_ramp()
 
 
-	#quick_psu_ramp()
+# Ramp PSU for CORC quench tests
+	# quick_psu_ramp(I_amps= 10, up_ramp_time = 0.5, dwell_time = 1, down_ramp_time = 0.5, setup_time = 10)
 
-	return
-
-
-
-
-def quick_psu_ramp():
-
-	rm = visa.ResourceManager()
-	sorenson = init_sorenson_psu(rm, max_voltage=5)
-
-
-	I_amps = 1000
-
-	ramp_time = 1.0
-	dwell_time = 0.01#
-
-	time.sleep(5) #give me time to run to yokogawa
-	print("\a")
-	time.sleep(4)
-	print("\a")
-	time.sleep(1)
-
-	ramp_sorenson_psu(sorenson, ramp_time, I_amps) #linear ramp up
-	time.sleep(ramp_time + dwell_time) #0.8*ramp_time
-
-	ramp_sorenson_psu(sorenson, 0.1, 0) #Ramp to 0 amps over 0.1 seconds
-	#set_sorenson_psu(sorenson, 0)#immediately go to 0 amps
 
 
 	return
@@ -67,30 +35,6 @@ def quick_psu_ramp():
 
 
 
-def run_PSU_ramp():
-	# power supply commands
-	rm = visa.ResourceManager()
-	sorenson = init_sorenson_psu(rm, max_voltage=5)
-
-
-	I_amps = 750#1000
-
-	ramp_time = 0.1 #seconds #10
-	dwell_time = 1# 0.2 #0.2 seconds for fast ramp
-
-
-	time.sleep(10) 
-
-	ramp_sorenson_psu(sorenson, ramp_time, I_amps)
-	time.sleep(ramp_time + dwell_time)
-	ramp_sorenson_psu(sorenson, ramp_time, 0)
-
-
-
-	#ramp_sorenson_psu(sorenson, 1, 0)	
-
-
-	#print('Current: ', I_amps)
 
 
 

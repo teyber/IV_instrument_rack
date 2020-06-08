@@ -10,7 +10,59 @@ import matplotlib.pyplot as plt
 from scipy.optimize import differential_evolution
 
 
-some_constant = 3
+
+
+
+##########################################################################################
+#Start Yokogowa ramp
+
+def quick_psu_ramp(I_amps, up_ramp_time, dwell_time, down_ramp_time, setup_time):
+
+	rm = visa.ResourceManager()
+	sorenson = init_sorenson_psu(rm, max_voltage=5)
+
+	if setup_time < 5:
+		print('You have not allowed enough time to go to yokogawa: ', setup_time)
+		return
+
+# Safety check
+	print('------------ Safety check ------------')
+	print('Programmed current range [A]: ', I_amps)
+	print('up ramp, dwell, down ramp [s]: ', up_ramp_time, dwell_time, down_ramp_time)
+	print('0 - Exit')		
+	print('1 - Energize systems')
+	current_warning = input('Is this correct? ')
+	if current_warning == 1: 
+		print('Continuing with IV curve - systems will be energized')
+		continue
+	else: return
+
+	#countdown to energization
+	for i in np.arange(int(setup_time)):
+		print('Energizing in :', int(setup_time)-i)
+		time.sleep(1)
+
+	time.sleep(2)
+
+	ramp_sorenson_psu(sorenson, up_ramp_time, I_amps) #linear ramp up
+	time.sleep(up_ramp_time + dwell_time) 
+
+	ramp_sorenson_psu(sorenson, down_ramp_time, 0) #Ramp to 0 amps over 0.1 seconds
+
+
+
+	return
+
+
+#End Yokogowa ramp
+##########################################################################################
+
+
+
+
+
+
+
 
 
 ##########################################################################################
@@ -311,7 +363,6 @@ def monitor_cooldown():
 
 #End cooldown monitor
 ##########################################################################################
-
 
 
 
