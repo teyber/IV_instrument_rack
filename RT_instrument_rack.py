@@ -21,7 +21,7 @@ def main():
 
 
 # #Run IV curve, measure both up and down ramps
-	test_code = 'corc_june_9_2020'
+	test_code = 'corc_june_10_2020'
 
 	#Initialize instruments
 	nanovm = init_nanovm(rm, max_voltage = 0.01, NPLC = 1)
@@ -29,12 +29,13 @@ def main():
 	sorenson = init_sorenson_psu(rm, max_voltage = 3)
 
 	#Ramp up and down
-	safe_mode = True
-	I_max = 40
-	dA = 5
-	run_IV_curve(rm, nanovm, dvm, sorenson, 0, I_max, dA, test_code, disable_psu = False, safe_mode) #ramp up, leave PSU energized
-	time.sleep(0.1)
-	run_IV_curve(rm, nanovm, dvm, sorenson, I_max, 0, -dA, test_code, disable_psu = True, safe_mode) #ramp up, leave PSU energized
+	safe_mode = False
+	I_start = 300
+	I_max = 390
+	dA = 10
+	run_IV_curve(rm, nanovm, dvm, sorenson, I_start, I_max, dA, test_code, True, safe_mode) #ramp up, leave PSU energized
+	# time.sleep(0.1)
+	# run_IV_curve(rm, nanovm, dvm, sorenson, I_max, 0, -dA, test_code, True, safe_mode) #ramp up, leave PSU energized
 
 
 # Ramp PSU for CORC quench tests

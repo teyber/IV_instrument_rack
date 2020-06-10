@@ -33,7 +33,6 @@ def quick_psu_ramp(rm, I_amps, up_ramp_time, dwell_time, down_ramp_time, setup_t
 	current_warning = input('Is this correct? ')
 	if current_warning == 1: 
 		print('Continuing with IV curve - systems will be energized')
-		continue
 	else: return
 
 	#countdown to energization
@@ -72,8 +71,9 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 
 	#IV parameters
 	I_vec = np.arange(I_start, I_end + I_inc, I_inc)
-	V_sample_max = 1e-3 #Disable PSU if voltage exceeds this
-	t_dwell = 1.0 #1 second
+	V_sample_max = 1.5e-3 #Disable PSU if voltage exceeds this
+	t_settle = 0.2
+	t_dwell = 2.5 #1 second
 
 	#Create a folder for this result (see helper_functions)
 	dir_name = create_folder(test_code)
@@ -81,15 +81,14 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 
 	# Ask user to double check current range before proceeding
 	print('------------ Safety check ------------')
-	print('Programmed current range [A]: ', np.min(I_vec), np.max(I_vec))
+	print('Programmed current range [A]: ', I_vec)
 	print('Programmed voltage threshold [V], dwell [s]: ', V_sample_max, t_dwell)
 	print('MANUALLY CHECK SHUNT RESISTOR IN GET_DVM()!')
 	print('0 - Exit')		
 	print('1 - Energize systems')
-	current_warning = input('Is this correct? ')
+	current_warning = int(input('Is this correct? '))
 	if current_warning == 1: 
 		print('Continuing with IV curve - systems will be energized')
-		continue
 	else: return
 
 	#Initialize vectors to be filled in IV curve
@@ -123,8 +122,8 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 	fig = plt.figure(figsize=(8,6))
 	ax1 = fig.add_subplot(1, 1, 1)
 	plt.ion()
-	L1, = ax1.plot(I_shunt, Vsample_1, 'k', label = 'Ch1')
-	L2, = ax1.plot(I_shunt, Vsample_2, 'b', label = 'Ch2')
+	L1, = ax1.plot(I_shunt, Vsample_1, 'ko--', label = 'Ch1')
+	L2, = ax1.plot(I_shunt, Vsample_2, 'bo--', label = 'Ch2')
 
 	#Range for plotting
 	x_min = I_start-5
@@ -139,13 +138,13 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 
 	#Start IV curve UP
 	for i in np.arange(num_points):
-
+		print(i)
 		#Set power supply to next current
 		inter_point_ramp_time = 0.25
 		ramp_sorenson_psu(sorenson_psu, inter_point_ramp_time, I_ramp_mag=I_vec[i]) # set_sorenson_psu(sorenson_psu, I_vec[i])
 
 		#Dwell to eliminate inductive voltage
-		time.sleep(t_dwell + inter_point_ramp_time)
+		time.sleep(t_settle + inter_point_ramp_time)
 
 		#Get voltages from meters
 		time_array[i] = time.time()
@@ -177,21 +176,19 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 		L2.set_ydata(Vsample_2[0:i])
 		L2.set_xdata(I_shunt[0:i])
 
-		plt.pause(0.05)
+		plt.pause(0.1)
 
+		time.sleep(t_dwell)
 
 		# In safe mode, require user input to go to next point
 		if safe_mode == True:
 			print('Continue ramping?')
-			current_warning = input('Exit (0), or continue(1)')
-			if current_warning == 1: continue
-			else:
+			current_warning = int(input('Exit (0), or continue(1)'))
+			if current_warning != 1:
 				print('returning to main')
 				np.savetxt(dir_name + '\\' +'CANCELLED_IV_curve_.txt', np.vstack((time_array, I_shunt, Vsample_1, Vsample_2)))
 				return 0, 0, 0, 0
 	
-
-
 
 	#Ramp down, do not collect voltages along way
 
@@ -247,7 +244,7 @@ def curve_fit_IV(I_meas, V_meas, Ic_guess, V_criterion):
 
 	#Voltage offset, linear resistance, Ic and n value
 	bnds = ((-30e-3,30e-3), (1e-10,10e-3),(0.1*Ic_guess, 5*Ic_guess),(5,40))
-	sol = differential_evolution(curve_fit_obj, bounds = bnds_long, args = (I_meas, V_meas, V_criterion), strategy='best1bin', maxiter=200, popsize=300, tol=1e-4, seed=False, mutation=(0, 0.2), recombination=0.4, disp=False, polish = True, init = 'random', updating = 'deferred', workers = 2)
+	sol = differential_evolution(curve_fit_obj, bounds = bnds, args = (I_meas, V_meas, V_criterion), strategy='best1bin', maxiter=100, popsize=100, tol=1e-4, seed=False, mutation=(0, 0.2), recombination=0.4, disp=False, polish = True, init = 'random', updating = 'deferred', workers = 2)
 
 	offset_fit = sol.x[0]
 	resistance_fit = sol.x[1]
@@ -257,10 +254,10 @@ def curve_fit_IV(I_meas, V_meas, Ic_guess, V_criterion):
 	print('\n')
 	print('********************')
 	print('Optimization convergence: ', sol.fun)
-	print('Voltage offset [micro-V]: ', offset_ch1)
-	print('Resistance [micro-ohm]: ', resistance_ch1)
-	print('Critical current [Amps]: ', Ic_ch1)
-	print('n value [-]: ', n_ch1)
+	print('Voltage offset [micro-V]: ', offset_fit)
+	print('Resistance [micro-ohm]: ', resistance_fit)
+	print('Critical current [Amps]: ', Ic_fit)
+	print('n value [-]: ', n_fit)
 	print('********************')
 	print('\n')
 
