@@ -182,6 +182,65 @@ def init_waveform(rm):
 
 
 ##########################################################################################
+#Start Raspberry Pi controlled heater
+
+def init_heater():
+
+	print('WARNING #1: DO NOT LEAVE HEATER POWER SUPPLY ON UNATTENDED!! CHECK CORRECT ORIENTATION!')
+	print('WARNING #2 - this code was only superficially tested!')
+
+	try:
+		import RPi.GPIO as GPIO
+
+		#Heater pin setup on RPI
+		heater_pin = 26
+		GPIO.setwarnings(False)
+		GPIO.setmode(GPIO.BCM)
+		GPIO.setup(heater_pin, GPIO.OUT)
+
+		print('Double check digital high = no current')
+		GPIO.output(heater_pin, GPIO.HIGH) #high = no current
+
+	except Exception as e:
+
+		print('Error trying to set up raspberry pi digital output pins!')
+		print('Make sure init_heater() was called and are using raspberry pi')
+    
+    
+    
+    return
+
+
+#This only works when using a raspberry pi!
+def fire_heater(pulse_duration):
+
+	print('WARNING #1: DO NOT LEAVE HEATER POWER SUPPLY ON UNATTENDED!! CHECK CORRECT ORIENTATION!')
+	print('WARNING #2 - this code was only superficially tested!')
+
+	try:
+	
+        print('Double check digital high = no current')
+		GPIO.output(heater_pin, GPIO.LOW)
+		time.sleep(pulse_duration)
+		GPIO.output(heater_pin, GPIO.HIGH)	
+
+	except Exception as e:
+
+		print('Error trying to set up raspberry pi digital output pins!')
+		print('Make sure init_heater() was called and are using raspberry pi')
+
+
+    return
+
+
+#End Raspberry Pi controlled heater
+##########################################################################################
+
+
+
+
+
+##########################################################################################
 #Start Sorenson PSU
 
 #This function initiates the Sorenson SGA 10/1200 power supply 
