@@ -222,7 +222,7 @@ def fire_heater(pulse_duration):
         print('Double check digital high = no current')
 		GPIO.output(heater_pin, GPIO.LOW)
 		time.sleep(pulse_duration)
-		 GPIO.output(heater_pin, GPIO.HIGH)	
+		GPIO.output(heater_pin, GPIO.HIGH)	
 
 	except Exception as e:
 
