@@ -205,10 +205,11 @@ def init_heater():
 
 		print('Error trying to set up raspberry pi digital output pins!')
 		print('Make sure init_heater() was called and are using raspberry pi')
-    
-    
-    
-    return
+
+	return
+
+
+
 
 
 #This only works when using a raspberry pi!
@@ -219,7 +220,7 @@ def fire_heater(pulse_duration):
 
 	try:
 	
-        print('Double check digital high = no current')
+		print('Double check digital high = no current')
 		GPIO.output(heater_pin, GPIO.LOW)
 		time.sleep(pulse_duration)
 		GPIO.output(heater_pin, GPIO.HIGH)	
@@ -230,7 +231,7 @@ def fire_heater(pulse_duration):
 		print('Make sure init_heater() was called and are using raspberry pi')
 
 
-    return
+	return
 
 
 #End Raspberry Pi controlled heater

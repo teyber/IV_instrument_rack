@@ -14,12 +14,17 @@ from measurement_routines import *
 def main():
 
 	rm = visa.ResourceManager()
-        
 	print(rm.list_resources())
 
+
+	dvm = init_dvm(rm, 1, 0.1)
+	for i in np.arange(10):
+		print(get_dvm(dvm))
+		time.sleep(1)
 	
-	ramp_time = 1
-	quick_psu_ramp(rm, I_amps= 30, up_ramp_time = ramp_time, dwell_time = 30, down_ramp_time = ramp_time, setup_time = 5)
+
+	# ramp_time = 1
+	# quick_psu_ramp(rm, I_amps= 30, up_ramp_time = ramp_time, dwell_time = 30, down_ramp_time = ramp_time, setup_time = 5)
 
 
 	#Fire Heater
