@@ -48,7 +48,8 @@ def create_folder(test_code_0):
 #Note - there are two channels. Must select channel before querying read
 def init_nanovm(rm, max_voltage, NPLC):
 
-	nanovm = rm.open_resource("TCPIP::169.254.58.10::gpib0,22::INSTR")
+	nanovm = rm.open_resource("TCPIP::169.254.58.10::gpib0,12::INSTR") #Maxim's nanovoltmeter
+	# nanovm = rm.open_resource("TCPIP::169.254.58.10::gpib0,22::INSTR")	
 	#nanovm = rm.open_resource("TCPIP::192.168.100.10::gpib0,22::INSTR")	
 	nanovm.write('*IDN?')
 	print(nanovm.read())
@@ -83,6 +84,8 @@ def get_nanovm(nanovm, ch_num):
 	else:
 		print('Incorrect channel number. Defaulting to channel 1')
 		nanovm.write('ROUT:TERM FRON1')
+
+	time.sleep(0.2)
 
 	nanovm.write('READ?')
 	v_nvm = float(nanovm.read())
@@ -136,6 +139,7 @@ def get_dvm(dvm):
 
 	Rshunt = (50/1000)/1000 #1200A Sorenson PSU has 50 mV/1kA written on shunt resistor
 	dvm.write(':READ?')
+	time.sleep(0.1)
 	v_dvm = float(dvm.read())
 	Isample = v_dvm/Rshunt
 

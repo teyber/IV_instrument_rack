@@ -72,9 +72,10 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 
 	#IV parameters
 	I_vec = np.arange(I_start, I_end + I_inc, I_inc)
-	V_sample_max = 1.5e-3 #Disable PSU if voltage exceeds this
-	t_settle = 0.25
-	t_dwell = 0.5 #1 second
+	V_sample_max = 0.01 #Disable PSU if voltage exceeds this
+	t_settle = 1 #time to wait before recording voltage
+	t_plot = 2 #time to plot
+	inter_point_ramp_time = 5
 
 	#Create a folder for this result (see helper_functions)
 	dir_name = create_folder(test_code)
@@ -83,7 +84,7 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 	# Ask user to double check current range before proceeding
 	print('------------ Safety check ------------')
 	print('Programmed current range [A]: ', I_vec)
-	print('Programmed voltage threshold [V], dwell [s]: ', V_sample_max, t_dwell)
+	print('Programmed voltage threshold [V], ramp time [s], settle time [s]: ', V_sample_max, inter_point_ramp_time, t_settle)
 	print('MANUALLY CHECK SHUNT RESISTOR IN GET_DVM()!')
 	print('0 - Exit')		
 	print('1 - Energize systems')
@@ -91,7 +92,7 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 	if current_warning == 1: 
 		print('Continuing with IV curve - systems will be energized')
 	else: 
-		ramp_sorenson_psu(sorenson_psu, 0.5, 0) #Ramp to 0 amps over 0.5 seconds
+		ramp_sorenson_psu(sorenson_psu, 1, 0) #Ramp to 0 amps over 0.5 seconds
 		return
 
 	#Initialize vectors to be filled in IV curve
@@ -126,7 +127,7 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 	x_min = I_start-5
 	x_max = I_end+20
 	y_min = -5e-6
-	y_max = 100e-6
+	y_max = 50e-6
 
 
 
@@ -134,7 +135,6 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 	for i in np.arange(num_points):
 		print(i)
 		#Set power supply to next current
-		inter_point_ramp_time = 0.25
 		ramp_sorenson_psu(sorenson_psu, inter_point_ramp_time, I_ramp_mag=I_vec[i]) # set_sorenson_psu(sorenson_psu, I_vec[i])
 
 		#Dwell to eliminate inductive voltage
@@ -172,10 +172,10 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 		plt.ylim([1000*y_min, 1000*y_max])
 		plt.xlabel('I [A]')
 		plt.ylabel('V [mV]')
+		plt.legend()
 		plt.show(block=False)
 
-		plt.pause(t_dwell)
-
+		plt.pause(t_plot)
 		plt.close()
 
 		# In safe mode, require user input to go to next point
@@ -205,7 +205,7 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 
 
 #Analye IV curve with curve fit
-	Ic_guess = 600 #amps
+	Ic_guess = 180 #amps
 
 	print('Ch1 analysis')
 	offset_ch1, resistance_ch1, Ic_ch1, n_ch1 = curve_fit_IV(I_shunt, Vsample_1, Ic_guess, V_criterion=1e-6)
