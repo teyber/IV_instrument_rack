@@ -72,10 +72,10 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 
 	#IV parameters
 	I_vec = np.arange(I_start, I_end + I_inc, I_inc)
-	V_sample_max = 0.01 #Disable PSU if voltage exceeds this
-	t_settle = 1 #time to wait before recording voltage
-	t_plot = 2 #time to plot
-	inter_point_ramp_time = 5
+	V_sample_max = 1 #Disable PSU if voltage exceeds this
+	t_settle = 0.3 #time to wait before recording voltage
+	t_plot = 1 #time to plot
+	inter_point_ramp_time = 0.2
 
 	#Create a folder for this result (see helper_functions)
 	dir_name = create_folder(test_code)
@@ -109,6 +109,7 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 	Vsample_2[0] = get_nanovm(nanovm, ch_num = 2)
 
 
+
 	if (np.abs(Vsample_1[0]) > V_sample_max):
 		print('Error! Channel 1 is greater than voltage threshold. Returning to main.')
 		print('V_sample_max, V_sample1, V_sample2: ', V_sample_max, Vsample_1[0], Vsample_2[0])
@@ -126,8 +127,8 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 	#Range for plotting
 	x_min = I_start-5
 	x_max = I_end+20
-	y_min = -5e-6
-	y_max = 50e-6
+	y_min = -75e-6
+	y_max = -50e-6
 
 
 
@@ -146,8 +147,13 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 		Vsample_1[i] = get_nanovm(nanovm, ch_num = 1)
 		Vsample_2[i] = get_nanovm(nanovm, ch_num = 2)
 
+
+		print('WARNING - FORCING CHANNEL 2 OFF ON PSU')
+		Vsample_2[0] = 0
+		Vsample_2[i] = 0
+
 		#Print values. Could be used to recover valuable data if program crashes
-		print('i, t, I, V1, V2', i, time_array[i]-time_array[0], I_shunt[i], Vsample_1[i], Vsample_2[i])
+		print('I, V1, V2', I_shunt[i], Vsample_1[i], Vsample_2[i])
 
 		#See if voltage threshold has been exceeded. If so, set PSU to 0 amps.
 		if ((np.abs(Vsample_1[i]) >= V_sample_max) or (np.abs(Vsample_2[i]) >= V_sample_max)):
@@ -158,21 +164,25 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 			return 0, 0, 0, 0
 
 		#Plot curve, update y axis limits if needed
-		if (np.max(Vsample_1) > y_max) or (np.max(Vsample_2) > y_max): 
-			y_max = np.max((np.max(Vsample_1), np.max(Vsample_2)))
+		# if (np.max(Vsample_1) > y_max) or (np.max(Vsample_2) > y_max): 
+		# 	y_max = np.max((np.max(Vsample_1), np.max(Vsample_2)))
 
-		if (np.min(Vsample_1) < y_min) or (np.min(Vsample_2) < y_min): 
-			y_min = np.min((np.min(Vsample_1), np.min(Vsample_2)))
 
+		# if (np.min(Vsample_1) < y_min) or (np.min(Vsample_2) < y_min): 
+		# 	y_min = np.min((np.min(Vsample_1), np.min(Vsample_2)))
+
+
+		y_min = 1.05*np.min(Vsample_1)
+		y_max = 1.05*np.max(Vsample_2)
 
 	
 		fig = plt.figure(figsize=(8,6))
 		plt.plot(I_shunt[0:(i+1)], 1000*Vsample_1[0:(i+1)], 'ko--', label = 'Ch1')
-		plt.plot(I_shunt[0:(i+1)], 1000*Vsample_2[0:(i+1)], 'bo--', label = 'Ch2')
+		# plt.plot(I_shunt[0:(i+1)], 1000*Vsample_2[0:(i+1)], 'bo--', label = 'Ch2')
 		plt.ylim([1000*y_min, 1000*y_max])
 		plt.xlabel('I [A]')
 		plt.ylabel('V [mV]')
-		plt.legend()
+		# plt.legend()
 		plt.show(block=False)
 
 		plt.pause(t_plot)
@@ -222,7 +232,7 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 
 	fig = plt.figure(figsize=(8,6))
 	plt.plot(I_shunt, 1000*Vsample_1, 'ko--', label = 'Ch1')
-	plt.plot(I_shunt, 1000*Vsample_2, 'bo--', label = 'Ch2')
+	# plt.plot(I_shunt, 1000*Vsample_2, 'bo--', label = 'Ch2')
 	plt.ylim([1000*y_min, 1000*y_max])
 	plt.xlabel('I [A]')
 	plt.ylabel('V [mV]')

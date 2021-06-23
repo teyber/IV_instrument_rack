@@ -85,7 +85,7 @@ def get_nanovm(nanovm, ch_num):
 		print('Incorrect channel number. Defaulting to channel 1')
 		nanovm.write('ROUT:TERM FRON1')
 
-	time.sleep(0.2)
+	time.sleep(0.3)
 
 	nanovm.write('READ?')
 	v_nvm = float(nanovm.read())
@@ -139,7 +139,7 @@ def get_dvm(dvm):
 
 	Rshunt = (50/1000)/1000 #1200A Sorenson PSU has 50 mV/1kA written on shunt resistor
 	dvm.write(':READ?')
-	time.sleep(0.1)
+	time.sleep(0.2)
 	v_dvm = float(dvm.read())
 	Isample = v_dvm/Rshunt
 
@@ -260,16 +260,20 @@ def init_sorenson_psu(rm, max_voltage):
 	sorenson.write_termination = '\n'
 	sorenson.read_termination = '\n'
 	sorenson.write("*IDN?")
+	time.sleep(0.1)
 	print(sorenson.read())
 
 	# sorenson_psu.write("*CLS")
 	time.sleep(0.2)
 	sorenson.write("*RST")
-	time.sleep(0.5)
+	time.sleep(0.6)
 	sorenson.write('SOUR:VOLT ' + str(max_voltage))
-	time.sleep(0.1)
+	time.sleep(0.3)
+	sorenson.write('SOUR:VOLT:PROT ' + str(max_voltage))
+	time.sleep(0.3)
+
 	sorenson.write('SOUR:CURR 0')
-	time.sleep(0.1)
+	time.sleep(0.3)
 
 	return sorenson
 
