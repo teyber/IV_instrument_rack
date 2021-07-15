@@ -46,7 +46,7 @@ def create_folder(test_code_0):
 #This function initiates the Agilent 34420A nanovolt meter
 #and gets is ready to start returning single readings.
 #Note - there are two channels. Must select channel before querying read
-def init_nanovm(rm, max_voltage, NPLC):
+def init_nanovm_agilent(rm, max_voltage, NPLC):
 
 	nanovm = rm.open_resource("TCPIP::169.254.58.10::gpib0,12::INSTR") #Maxim's nanovoltmeter
 	# nanovm = rm.open_resource("TCPIP::169.254.58.10::gpib0,22::INSTR")	
@@ -75,7 +75,7 @@ def init_nanovm(rm, max_voltage, NPLC):
 
 
 #Return voltage reading from specified channel of nanovolt meter
-def get_nanovm(nanovm, ch_num):
+def get_nanovm_agilent(nanovm, ch_num):
 
 	if ch_num == 1:	
 		nanovm.write('ROUT:TERM FRON1')
@@ -91,6 +91,68 @@ def get_nanovm(nanovm, ch_num):
 	v_nvm = float(nanovm.read())
 
 	return v_nvm
+
+
+
+
+
+
+
+
+#This function initiates the Agilent 34420A nanovolt meter
+#and gets is ready to start returning single readings.
+#Note - there are two channels. Must select channel before querying read
+#AGILENT
+def init_nanovm_keithley(rm, max_voltage, NPLC):
+
+	keithley_2182 = rm.open_resource("TCPIP::169.254.58.10::gpib0,12::INSTR") #
+	keithley_2182.write('*IDN?')
+	print(keithley_2182.read())
+
+
+	keithley_2182.timeout = 1000
+	keithley_2182.write("*rst; status:preset; *cls")
+	time.sleep(0.1)
+	keithley_2182.write("ABORT")
+	keithley_2182.write("INITIATE:CONTINUOUS OFF")
+	keithley_2182.write("trig:source ext;count 1") 
+	keithley_2182.write("sens:func 'VOLTAGE:DC'")
+	keithley_2182.write("sens:volt:chan1:range 10")
+
+	keithley_2182.write("INIT")
+
+	print '---'
+	time.sleep(0.5)
+
+
+
+	return keithley_2182
+
+
+
+
+#Return voltage reading from specified channel of nanovolt meter
+#AGILENT
+def get_nanovm_keithley(keithley_2182, ch_num):
+
+
+	keithley_2182.write(":SENSE:DATA:FRESH?")
+	time.sleep(0.1)
+	print keithley_2182.read()
+	time.sleep(0.1)
+	nanovm.write('READ?')
+	v_nvm = float(nanovm.read())
+
+	return v_nvm
+
+
+
+
+
+
+
+
+
 
 
 
