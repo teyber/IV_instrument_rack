@@ -16,16 +16,19 @@ def main():
 	rm = visa.ResourceManager()
 	print(rm.list_resources())
 
-	nanovm = init_nanovm(rm, max_voltage = 0.1, NPLC = 4)
-	dvm = init_dvm(rm, max_voltage = 0.1, NPLC = 2)
+	nanovm = init_nanovm(rm, max_voltage = 0.1, NPLC = 5)
+	dvm = init_dvm(rm, max_voltage = 0.1, NPLC = 3)
 	sorenson_psu = init_sorenson_psu(rm, max_voltage=10)
 
 
-	run_IV_curve(rm, nanovm, dvm, sorenson_psu,	0, 190, 5, '2223_test2_up', disable_psu = False, safe_mode = False)
+	# run_IV_curve(rm, nanovm, dvm, sorenson_psu,	150, 190, 5, '2223_test4_up', disable_psu = False, safe_mode = True)
+
+
+	run_IV_curve(rm, nanovm, dvm, sorenson_psu,	0, 190, 5, '2223_test4_up', disable_psu = False, safe_mode = False)
 
 	time.sleep(1)
 
-	run_IV_curve(rm, nanovm, dvm, sorenson_psu,	190, 0, -5, '2223_test2_down', disable_psu = True, safe_mode = False)
+	run_IV_curve(rm, nanovm, dvm, sorenson_psu,	190, 0, -5, '2223_test4_down', disable_psu = True, safe_mode = False)
 
 
 	# ramp_time = 5

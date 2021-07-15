@@ -73,9 +73,9 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 	#IV parameters
 	I_vec = np.arange(I_start, I_end + I_inc, I_inc)
 	V_sample_max = 1 #Disable PSU if voltage exceeds this
-	t_settle = 0.3 #time to wait before recording voltage
+	t_settle = 2 #time to wait before recording voltage
 	t_plot = 1 #time to plot
-	inter_point_ramp_time = 0.2
+	inter_point_ramp_time = 2
 
 	#Create a folder for this result (see helper_functions)
 	dir_name = create_folder(test_code)
@@ -148,6 +148,9 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 		Vsample_2[i] = get_nanovm(nanovm, ch_num = 2)
 
 
+		#Flip sign
+		# Vsample_1[i] = -Vsample_1[i]
+
 		print('WARNING - FORCING CHANNEL 2 OFF ON PSU')
 		Vsample_2[0] = 0
 		Vsample_2[i] = 0
@@ -172,8 +175,8 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 		# 	y_min = np.min((np.min(Vsample_1), np.min(Vsample_2)))
 
 
-		y_min = 1.05*np.min(Vsample_1)
-		y_max = 1.05*np.max(Vsample_2)
+		y_min = np.min(Vsample_1)
+		y_max = np.max(Vsample_2)
 
 	
 		fig = plt.figure(figsize=(8,6))
@@ -184,6 +187,7 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 		plt.ylabel('V [mV]')
 		# plt.legend()
 		plt.show(block=False)
+		# plt.show()
 
 		plt.pause(t_plot)
 		plt.close()
@@ -233,7 +237,7 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 	fig = plt.figure(figsize=(8,6))
 	plt.plot(I_shunt, 1000*Vsample_1, 'ko--', label = 'Ch1')
 	# plt.plot(I_shunt, 1000*Vsample_2, 'bo--', label = 'Ch2')
-	plt.ylim([1000*y_min, 1000*y_max])
+	# plt.ylim([1000*y_min, 1000*y_max])
 	plt.xlabel('I [A]')
 	plt.ylabel('V [mV]')
 	plt.savefig(dir_name + '\\' +'plot_IV_curve.pdf')
