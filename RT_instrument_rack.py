@@ -16,7 +16,7 @@ def main():
 	rm = visa.ResourceManager()
 	print(rm.list_resources())
 
-	nanovm = init_nanovm(rm, max_voltage = 0.1, NPLC = 5)
+	nanovm = init_nanovm_agilent(rm, max_voltage = 0.1, NPLC = 5)
 	dvm = init_dvm(rm, max_voltage = 0.1, NPLC = 3)
 	sorenson_psu = init_sorenson_psu(rm, max_voltage=10)
 
@@ -54,7 +54,7 @@ def top_control_IV_curve(rm):
 	test_code = 'corc_Bz_jan_20210'
 
 	#Initialize instruments
-	nanovm = init_nanovm(rm, max_voltage = 0.01, NPLC = 1)
+	nanovm = init_nanovm_agilent(rm, max_voltage = 0.01, NPLC = 1)
 	dvm = init_dvm(rm, max_voltage = 0.1, NPLC = 0.1)
 	sorenson = init_sorenson_psu(rm, max_voltage = 3)
 

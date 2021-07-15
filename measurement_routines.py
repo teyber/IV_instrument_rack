@@ -105,8 +105,8 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 	#Check starting point before telling power supply to ramp
 	time_array[0] = time.time()
 	I_shunt[0] = get_dvm(dvm)[1]
-	Vsample_1[0] = get_nanovm(nanovm, ch_num = 1)
-	Vsample_2[0] = get_nanovm(nanovm, ch_num = 2)
+	Vsample_1[0] = get_nanovm_agilent(nanovm, ch_num = 1)
+	Vsample_2[0] = get_nanovm_agilent(nanovm, ch_num = 2)
 
 
 
@@ -144,8 +144,8 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 		#Get voltages from meters
 		time_array[i] = time.time()
 		I_shunt[i] = get_dvm(dvm)[1]
-		Vsample_1[i] = get_nanovm(nanovm, ch_num = 1)
-		Vsample_2[i] = get_nanovm(nanovm, ch_num = 2)
+		Vsample_1[i] = get_nanovm_agilent(nanovm, ch_num = 1)
+		Vsample_2[i] = get_nanovm_agilent(nanovm, ch_num = 2)
 
 
 		#Flip sign
@@ -339,8 +339,8 @@ def monitor_cooldown(rm):
 
 		#Get voltages from meters
 		time_array.append(time.time())
-		Vsample_1.append(get_nanovm(nanovm, ch_num = 1))
-		Vsample_2.append(get_nanovm(nanovm, ch_num = 1))
+		Vsample_1.append(get_nanovm_agilent(nanovm, ch_num = 1))
+		Vsample_2.append(get_nanovm_agilent(nanovm, ch_num = 1))
 
 		#Print values. Could be used to recover valuable data if program crashes
 		print(i, time_array[i], I_shunt[i], Vsample_1[i], Vsample_2[i])
