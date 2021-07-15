@@ -105,24 +105,26 @@ def get_nanovm_agilent(nanovm, ch_num):
 #AGILENT
 def init_nanovm_keithley(rm, max_voltage, NPLC):
 
-	keithley_2182 = rm.open_resource("TCPIP::169.254.58.10::gpib0,12::INSTR") #
+	keithley_2182 = rm.open_resource("TCPIP::169.254.58.10::gpib0,21::INSTR") #
 	keithley_2182.write('*IDN?')
+	time.sleep(0.05)
 	print(keithley_2182.read())
 
 
-	keithley_2182.timeout = 1000
-	keithley_2182.write("*rst; status:preset; *cls")
 	time.sleep(0.1)
-	keithley_2182.write("ABORT")
-	keithley_2182.write("INITIATE:CONTINUOUS OFF")
-	keithley_2182.write("trig:source ext;count 1") 
-	keithley_2182.write("sens:func 'VOLTAGE:DC'")
-	keithley_2182.write("sens:volt:chan1:range 10")
-
+	keithley_2182.write("*RST")
+	keithley_2182.write("*CLS")
+	keithley_2182.write("INIT:CONT OFF")
+	keithley_2182.write("ABORT")	
+	keithley_2182.write("SENS:FUNC 'VOLT:DC'")
+	keithley_2182.write("SENS:VOLT:DC:NPLC " + str(NPLC))
+	keithley_2182.write("SENS:VOLT:RANG " + str(max_voltage))
+	keithley_2182.write("TRIG:COUN 1")
+	keithley_2182.write("SAMP:COUN 1")
+	keithley_2182.write("TRIG:DEL 0")
+	keithley_2182.write("TRIG:SOUR IMM")
+	time.sleep(0.1)
 	keithley_2182.write("INIT")
-
-	print '---'
-	time.sleep(0.5)
 
 
 
@@ -136,12 +138,13 @@ def init_nanovm_keithley(rm, max_voltage, NPLC):
 def get_nanovm_keithley(keithley_2182, ch_num):
 
 
-	keithley_2182.write(":SENSE:DATA:FRESH?")
+	keithley_2182.write("SENS:CHAN " + str(ch_num))
+	time.sleep(0.05)
+	keithley_2182.write("INIT")
+	time.sleep(0.05)
+	keithley_2182.write('FETC?')
 	time.sleep(0.1)
-	print keithley_2182.read()
-	time.sleep(0.1)
-	nanovm.write('READ?')
-	v_nvm = float(nanovm.read())
+	v_nvm = float(keithley_2182.read())
 
 	return v_nvm
 
