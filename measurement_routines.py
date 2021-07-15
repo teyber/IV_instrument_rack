@@ -106,7 +106,7 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 	time_array[0] = time.time()
 	I_shunt[0] = get_dvm(dvm)[1]
 	Vsample_1[0] = get_nanovm_agilent(nanovm, ch_num = 1)
-	Vsample_2[0] = get_nanovm_agilent(nanovm, ch_num = 2)
+	# Vsample_2[0] = get_nanovm_keysight(nanovm, ch_num = 2)
 
 
 
@@ -116,11 +116,11 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 		ramp_sorenson_psu(sorenson_psu, I_ramp_time=2, I_ramp_mag=0)
 		return 0, 0, 0, 0
 
-	if (np.abs(Vsample_2[0]) > V_sample_max):
-		print('Error! Channel 2 is greater than voltage threshold. Returning to main.')
-		print('V_sample_max, V_sample1, V_sample2: ', V_sample_max, Vsample_1[0], Vsample_2[0])
-		ramp_sorenson_psu(sorenson_psu, I_ramp_time=2, I_ramp_mag=0)
-		return 0, 0, 0, 0
+	# if (np.abs(Vsample_2[0]) > V_sample_max):
+	# 	print('Error! Channel 2 is greater than voltage threshold. Returning to main.')
+	# 	print('V_sample_max, V_sample1, V_sample2: ', V_sample_max, Vsample_1[0], Vsample_2[0])
+	# 	ramp_sorenson_psu(sorenson_psu, I_ramp_time=2, I_ramp_mag=0)
+	# 	return 0, 0, 0, 0
 
 
 
@@ -145,7 +145,7 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 		time_array[i] = time.time()
 		I_shunt[i] = get_dvm(dvm)[1]
 		Vsample_1[i] = get_nanovm_agilent(nanovm, ch_num = 1)
-		Vsample_2[i] = get_nanovm_agilent(nanovm, ch_num = 2)
+		# Vsample_2[i] = get_nanovm_keysight(nanovm, ch_num = 2)
 
 
 		#Flip sign
@@ -224,13 +224,13 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 	print('Ch1 analysis')
 	offset_ch1, resistance_ch1, Ic_ch1, n_ch1 = curve_fit_IV(I_shunt, Vsample_1, Ic_guess, V_criterion=1e-6)
 	
-	print('Ch2 analysis')
-	offset_ch2, resistance_ch2, Ic_ch2, n_ch2 = curve_fit_IV(I_shunt, Vsample_2, Ic_guess, V_criterion=1e-6)
+	# print('Ch2 analysis')
+	# offset_ch2, resistance_ch2, Ic_ch2, n_ch2 = curve_fit_IV(I_shunt, Vsample_2, Ic_guess, V_criterion=1e-6)
 
 	#save output
 	np.savetxt(dir_name + '\\' +'IV_curve.txt', np.vstack((time_array, I_shunt, Vsample_1, Vsample_2)))	
 	np.savetxt(dir_name + '\\' +'ch1_fit.txt', [offset_ch1, resistance_ch1, Ic_ch1, n_ch1])	
-	np.savetxt(dir_name + '\\' +'ch2_fit.txt', [offset_ch2, resistance_ch2, Ic_ch2, n_ch2])	
+	# np.savetxt(dir_name + '\\' +'ch2_fit.txt', [offset_ch2, resistance_ch2, Ic_ch2, n_ch2])	
 
 	#Save figure
 
@@ -340,7 +340,7 @@ def monitor_cooldown(rm):
 		#Get voltages from meters
 		time_array.append(time.time())
 		Vsample_1.append(get_nanovm_agilent(nanovm, ch_num = 1))
-		Vsample_2.append(get_nanovm_agilent(nanovm, ch_num = 1))
+		# Vsample_2.append(get_nanovm_agilent(nanovm, ch_num = 1))
 
 		#Print values. Could be used to recover valuable data if program crashes
 		print(i, time_array[i], I_shunt[i], Vsample_1[i], Vsample_2[i])

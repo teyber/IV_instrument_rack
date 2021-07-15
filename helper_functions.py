@@ -48,8 +48,8 @@ def create_folder(test_code_0):
 #Note - there are two channels. Must select channel before querying read
 def init_nanovm_agilent(rm, max_voltage, NPLC):
 
-	nanovm = rm.open_resource("TCPIP::169.254.58.10::gpib0,12::INSTR") #Maxim's nanovoltmeter
-	# nanovm = rm.open_resource("TCPIP::169.254.58.10::gpib0,22::INSTR")	
+	# nanovm = rm.open_resource("TCPIP::169.254.58.10::gpib0,12::INSTR") #Maxim's nanovoltmeter
+	nanovm = rm.open_resource("TCPIP::169.254.58.10::gpib0,22::INSTR")	
 	#nanovm = rm.open_resource("TCPIP::192.168.100.10::gpib0,22::INSTR")	
 	nanovm.write('*IDN?')
 	print(nanovm.read())
@@ -105,10 +105,20 @@ def get_nanovm_agilent(nanovm, ch_num):
 #AGILENT
 def init_nanovm_keithley(rm, max_voltage, NPLC):
 
-	keithley_2182 = rm.open_resource("TCPIP::169.254.58.10::gpib0,21::INSTR") #
+
+
+	# keithley_2182 = rm.open_resource('ASRL4::INSTR', baud_rate = 9600) #
+
+	keithley_2182 = rm.open_resource("TCPIP::169.254.58.10::gpib0,3::INSTR") #
+	# keithley_2182.timeout = 1000
+	# keithley_2182.write_termination = '\n'
+	# keithley_2182.read_termination = '\n'
+	
+
 	keithley_2182.write('*IDN?')
-	time.sleep(0.05)
+	time.sleep(0.1)
 	print(keithley_2182.read())
+
 
 
 	time.sleep(0.1)
@@ -124,8 +134,6 @@ def init_nanovm_keithley(rm, max_voltage, NPLC):
 	keithley_2182.write("TRIG:DEL 0")
 	keithley_2182.write("TRIG:SOUR IMM")
 	time.sleep(0.1)
-	keithley_2182.write("INIT")
-
 
 
 	return keithley_2182
@@ -176,13 +184,15 @@ def init_dvm(rm, max_voltage, NPLC):
 	dvm = rm.open_resource("TCPIP::169.254.58.10::gpib0,8::INSTR")
 	#dvm = rm.open_resource("TCPIP::192.168.100.10::gpib0,8::INSTR")
 
-	
-	dvm.write('*IDN?')
-	print(dvm.read())
-
-	dvm.timeout = 100
+	dvm.timeout = 1000
 	dvm.write_termination = '\n'
 	dvm.read_termination = '\n'
+
+
+	dvm.write('*IDN?')
+	time.sleep(0.1)
+	print(dvm.read())
+
 	dvm.write("*RST")
 	time.sleep(0.1)
 	dvm.write(":SENS:FUNC \'VOLTAGE:DC\'")

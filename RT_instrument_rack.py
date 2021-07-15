@@ -16,24 +16,17 @@ def main():
 	rm = visa.ResourceManager()
 	print(rm.list_resources())
 
-	nanovm = init_nanovm_agilent(rm, max_voltage = 0.1, NPLC = 5)
-	dvm = init_dvm(rm, max_voltage = 0.1, NPLC = 3)
+	nanovm = init_nanovm_agilent(rm, max_voltage = 0.01, NPLC = 5)
+	dvm = init_dvm(rm, max_voltage = 0.01, NPLC = 5)
 	sorenson_psu = init_sorenson_psu(rm, max_voltage=10)
-
-
-	# run_IV_curve(rm, nanovm, dvm, sorenson_psu,	150, 190, 5, '2223_test4_up', disable_psu = False, safe_mode = True)
-
-
-	run_IV_curve(rm, nanovm, dvm, sorenson_psu,	0, 190, 5, '2223_test4_up', disable_psu = False, safe_mode = False)
-
+# 
+	run_IV_curve(rm, nanovm, dvm, sorenson_psu,	0, 195, 5, '2223_test5_up_AGILENT', disable_psu = False, safe_mode = False)
 	time.sleep(1)
-
-	run_IV_curve(rm, nanovm, dvm, sorenson_psu,	190, 0, -5, '2223_test4_down', disable_psu = True, safe_mode = False)
+	run_IV_curve(rm, nanovm, dvm, sorenson_psu,	195, 0, -5, '2223_test5_down_AGILENT', disable_psu = True, safe_mode = False)
 
 
 	# ramp_time = 5
 	# quick_psu_ramp(rm, I_amps= 150, up_ramp_time = ramp_time, dwell_time = 1, down_ramp_time = ramp_time, setup_time = 5)
-
 
 	#Fire Heater
 	# pulse_duration = 0.5 # seconds
