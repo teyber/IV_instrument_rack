@@ -72,10 +72,10 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 
 	#IV parameters
 	I_vec = np.arange(I_start, I_end + I_inc, I_inc)
-	V_sample_max = 0.75/1000 #Disable PSU if voltage exceeds this
-	t_settle = 1 #time to wait before recording voltage
-	t_plot = 0.5 #time to plot
-	inter_point_ramp_time = 1
+	V_sample_max = 1.5/1000 #Disable PSU if voltage exceeds this
+	t_settle = 0.5 #time to wait before recording voltage
+	t_plot = 0.25 #time to plot
+	inter_point_ramp_time = 0.5
 	first_point_ramp_time = 2
 
 	#Create a folder for this result (see helper_functions)

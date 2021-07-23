@@ -25,9 +25,10 @@ def main():
 	sorenson_psu = init_sorenson_psu(rm, max_voltage=10)
 
 
-	run_IV_curve(rm, nanovm, dvm, sorenson_psu,	0, 430, 5, 'CORC_LSS_up_july23_V3TAP_FIXED', disable_psu = False, safe_mode = False)
-	time.sleep(2)
-	run_IV_curve(rm, nanovm, dvm, sorenson_psu,	430, 0, -5, 'CORC_LSS_DOWN_july23_V3TAP_FIXED', disable_psu = True, safe_mode = False)
+
+	run_IV_curve(rm, nanovm, dvm, sorenson_psu,	0, 340, 5, 'CORC_LSS_up_july23_V1TAP_FIXED', disable_psu = True, safe_mode = False)
+	# time.sleep(2)
+	# run_IV_curve(rm, nanovm, dvm, sorenson_psu,	340, 0, -5, 'CORC_LSS_DOWN_july23_V1TAP_FIXED', disable_psu = True, safe_mode = False)
 
 
 	# ramp_time = 0.5
