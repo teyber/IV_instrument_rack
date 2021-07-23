@@ -13,20 +13,27 @@ from measurement_routines import *
 
 def main():
 
+
+	# maxim_plot()
+
 	rm = visa.ResourceManager()
 	print(rm.list_resources())
 
-	nanovm = init_nanovm_agilent(rm, max_voltage = 0.01, NPLC = 5)
-	dvm = init_dvm(rm, max_voltage = 0.01, NPLC = 5)
+	nanovm = init_nanovm_keithley(rm, max_voltage = 0.001, NPLC = 5)
+	dvm = init_dvm(rm, max_voltage = 0.1, NPLC = 5)
 	sorenson_psu = init_sorenson_psu(rm, max_voltage=10)
-# 
-	run_IV_curve(rm, nanovm, dvm, sorenson_psu,	0, 195, 5, '2223_test5_up_AGILENT', disable_psu = False, safe_mode = False)
-	time.sleep(1)
-	run_IV_curve(rm, nanovm, dvm, sorenson_psu,	195, 0, -5, '2223_test5_down_AGILENT', disable_psu = True, safe_mode = False)
 
 
-	# ramp_time = 5
-	# quick_psu_ramp(rm, I_amps= 150, up_ramp_time = ramp_time, dwell_time = 1, down_ramp_time = ramp_time, setup_time = 5)
+	# run_IV_curve(rm, nanovm, dvm, sorenson_psu,	0, 420, 10, 'CORC_LSS_july22_FINAL', disable_psu = True, safe_mode = False)
+	
+
+
+	# time.sleep(1)
+	# run_IV_curve(rm, nanovm, dvm, sorenson_psu,	40, 0, -20, 'CORC_LSS_july22', disable_psu = True, safe_mode = True)
+
+
+	ramp_time = 1
+	quick_psu_ramp(rm, I_amps= 420, up_ramp_time = ramp_time, dwell_time = 1, down_ramp_time = ramp_time, setup_time = 10)
 
 	#Fire Heater
 	# pulse_duration = 0.5 # seconds
@@ -38,6 +45,19 @@ def main():
 
 	return
 
+
+
+def maxim_plot():
+
+	A = np.loadtxt('Results\\CORC_LSS_july22_save16\\CANCELLED_IV_curve_.txt')
+	print(np.shape(A))
+
+	plt.figure()
+	plt.plot(A[1,:], A[2,:])
+	plt.show()
+
+
+	return
 
 
 

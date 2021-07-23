@@ -109,7 +109,7 @@ def init_nanovm_keithley(rm, max_voltage, NPLC):
 
 	# keithley_2182 = rm.open_resource('ASRL4::INSTR', baud_rate = 9600) #
 
-	keithley_2182 = rm.open_resource("TCPIP::169.254.58.10::gpib0,3::INSTR") #
+	keithley_2182 = rm.open_resource("TCPIP::169.254.58.10::gpib0,28::INSTR") #
 	# keithley_2182.timeout = 1000
 	# keithley_2182.write_termination = '\n'
 	# keithley_2182.read_termination = '\n'
