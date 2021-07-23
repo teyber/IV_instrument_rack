@@ -72,9 +72,9 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 
 	#IV parameters
 	I_vec = np.arange(I_start, I_end + I_inc, I_inc)
-	V_sample_max = 1 #Disable PSU if voltage exceeds this
+	V_sample_max = 0.75/1000 #Disable PSU if voltage exceeds this
 	t_settle = 1 #time to wait before recording voltage
-	t_plot = 1 #time to plot
+	t_plot = 0.5 #time to plot
 	inter_point_ramp_time = 1
 	first_point_ramp_time = 2
 
@@ -106,7 +106,7 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 	#Check starting point before telling power supply to ramp
 	time_array[0] = time.time()
 	I_shunt[0] = get_dvm(dvm)[1]
-	Vsample_1[0] = get_nanovm_agilent(nanovm, ch_num = 1)
+	Vsample_1[0] = get_nanovm_keithley(nanovm, ch_num = 1)
 	# Vsample_2[0] = get_nanovm_keysight(nanovm, ch_num = 2)
 
 
@@ -125,12 +125,6 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 
 
 
-	#Range for plotting
-	x_min = I_start-5
-	x_max = I_end+20
-	y_min = -75e-6
-	y_max = -50e-6
-
 	#Ramp to first point SLOWLY
 	ramp_sorenson_psu(sorenson_psu, first_point_ramp_time, I_ramp_mag=I_vec[0]) # set_sorenson_psu(sorenson_psu, I_vec[i])
 	time.sleep(t_settle + first_point_ramp_time)
@@ -147,7 +141,7 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 		#Get voltages from meters
 		time_array[i] = time.time()
 		I_shunt[i] = get_dvm(dvm)[1]
-		Vsample_1[i] = get_nanovm_agilent(nanovm, ch_num = 1)
+		Vsample_1[i] = get_nanovm_keithley(nanovm, ch_num = 1)
 		# Vsample_2[i] = get_nanovm_keysight(nanovm, ch_num = 2)
 
 
@@ -170,22 +164,10 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 			return 0, 0, 0, 0
 
 		#Plot curve, update y axis limits if needed
-		# if (np.max(Vsample_1) > y_max) or (np.max(Vsample_2) > y_max): 
-		# 	y_max = np.max((np.max(Vsample_1), np.max(Vsample_2)))
-
-
-		# if (np.min(Vsample_1) < y_min) or (np.min(Vsample_2) < y_min): 
-		# 	y_min = np.min((np.min(Vsample_1), np.min(Vsample_2)))
-
-
-		y_min = np.min(Vsample_1)
-		y_max = np.max(Vsample_1)
-
 	
 		fig = plt.figure(figsize=(8,6))
 		plt.plot(I_shunt[0:(i+1)], 1000*Vsample_1[0:(i+1)], 'ko--', label = 'Ch1')
 		# plt.plot(I_shunt[0:(i+1)], 1000*Vsample_2[0:(i+1)], 'bo--', label = 'Ch2')
-		# plt.ylim([1000*y_min, 1000*y_max])
 		plt.xlabel('I [A]')
 		plt.ylabel('V [mV]')
 		# plt.legend()
@@ -200,9 +182,19 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 			print('Continue ramping?')
 			current_warning = int(input('Exit (0), or continue(1)'))
 			if current_warning != 1:
-				ramp_sorenson_psu(sorenson_psu, 0.5, 0) #Ramp to 0 amps over 0.5 seconds
+				ramp_sorenson_psu(sorenson_psu, 2, 0) #Ramp to 0 amps over 2 seconds
 				print('returning to main')
-				np.savetxt(dir_name + '\\' +'CANCELLED_IV_curve_.txt', np.vstack((time_array, I_shunt, Vsample_1, Vsample_2)))
+
+				np.savetxt(dir_name + '\\' +'CANCELLED_IV_curve.txt', np.vstack((time_array, I_shunt, Vsample_1, Vsample_2)))	
+				fig = plt.figure(figsize=(8,6))
+				plt.plot(I_shunt, 1000*Vsample_1, 'ko--', label = 'Ch1')
+				# plt.plot(I_shunt, 1000*Vsample_2, 'bo--', label = 'Ch2')
+				# plt.ylim([1000*y_min, 1000*y_max])
+				plt.xlabel('I [A]')
+				plt.ylabel('V [mV]')
+				plt.savefig(dir_name + '\\' +'plot_IV_curve.pdf')
+				# plt.show()
+				plt.close()
 				return 0, 0, 0, 0
 	
 
@@ -222,10 +214,10 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 
 
 #Analye IV curve with curve fit
-	Ic_guess = 320 #amps
+	Ic_guess = 380 #amps
 
 	print('Ch1 analysis')
-	offset_ch1, resistance_ch1, Ic_ch1, n_ch1 = curve_fit_IV(I_shunt, Vsample_1, Ic_guess, V_criterion=10e-6)
+	offset_ch1, resistance_ch1, Ic_ch1, n_ch1 = curve_fit_IV(I_shunt, Vsample_1, Ic_guess, V_criterion=100e-6)
 	
 	# print('Ch2 analysis')
 	# offset_ch2, resistance_ch2, Ic_ch2, n_ch2 = curve_fit_IV(I_shunt, Vsample_2, Ic_guess, V_criterion=1e-6)

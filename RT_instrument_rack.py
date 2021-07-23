@@ -16,6 +16,7 @@ def main():
 
 	# maxim_plot()
 
+
 	rm = visa.ResourceManager()
 	print(rm.list_resources())
 
@@ -24,16 +25,15 @@ def main():
 	sorenson_psu = init_sorenson_psu(rm, max_voltage=10)
 
 
-	# run_IV_curve(rm, nanovm, dvm, sorenson_psu,	0, 420, 10, 'CORC_LSS_july22_FINAL', disable_psu = True, safe_mode = False)
-	
+	run_IV_curve(rm, nanovm, dvm, sorenson_psu,	0, 430, 5, 'CORC_LSS_up_july23_V3TAP_FIXED', disable_psu = False, safe_mode = False)
+	time.sleep(2)
+	run_IV_curve(rm, nanovm, dvm, sorenson_psu,	430, 0, -5, 'CORC_LSS_DOWN_july23_V3TAP_FIXED', disable_psu = True, safe_mode = False)
 
 
-	# time.sleep(1)
-	# run_IV_curve(rm, nanovm, dvm, sorenson_psu,	40, 0, -20, 'CORC_LSS_july22', disable_psu = True, safe_mode = True)
+	# ramp_time = 0.5
+	# quick_psu_ramp(rm, I_amps= 430, up_ramp_time = ramp_time, dwell_time = 1, down_ramp_time = ramp_time, setup_time = 10)
 
 
-	ramp_time = 1
-	quick_psu_ramp(rm, I_amps= 420, up_ramp_time = ramp_time, dwell_time = 1, down_ramp_time = ramp_time, setup_time = 10)
 
 	#Fire Heater
 	# pulse_duration = 0.5 # seconds
@@ -42,6 +42,7 @@ def main():
 
 
 	
+
 
 	return
 
