@@ -26,13 +26,13 @@ def main():
 
 
 
-	run_IV_curve(rm, nanovm, dvm, sorenson_psu,	0, 340, 5, 'CORC_LSS_up_july23_V1TAP_FIXED', disable_psu = True, safe_mode = False)
+	# run_IV_curve(rm, nanovm, dvm, sorenson_psu,	0, 350, 5, 'CORC_LSS_up_july29_V1TAP', disable_psu = False, safe_mode = False)
 	# time.sleep(2)
-	# run_IV_curve(rm, nanovm, dvm, sorenson_psu,	340, 0, -5, 'CORC_LSS_DOWN_july23_V1TAP_FIXED', disable_psu = True, safe_mode = False)
+	# run_IV_curve(rm, nanovm, dvm, sorenson_psu,	350, 0, -5, 'CORC_LSS_down_july29_V1TAP', disable_psu = True, safe_mode = False)
 
 
-	# ramp_time = 0.5
-	# quick_psu_ramp(rm, I_amps= 430, up_ramp_time = ramp_time, dwell_time = 1, down_ramp_time = ramp_time, setup_time = 10)
+	ramp_time = 5
+	quick_psu_ramp(rm, I_amps= 325, up_ramp_time = ramp_time, dwell_time = 60, down_ramp_time = ramp_time, setup_time = 10)
 
 
 
