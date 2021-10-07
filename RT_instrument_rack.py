@@ -14,35 +14,37 @@ from measurement_routines import *
 def main():
 
 
-	# maxim_plot()
 
 
 	rm = visa.ResourceManager()
 	print(rm.list_resources())
 
-	nanovm = init_nanovm_keithley(rm, max_voltage = 0.001, NPLC = 5)
-	dvm = init_dvm(rm, max_voltage = 0.1, NPLC = 5)
-	sorenson_psu = init_sorenson_psu(rm, max_voltage=10)
+	ramp_time = 5
+	quick_psu_ramp(rm, I_amps= 340, up_ramp_time = ramp_time, dwell_time = 2, down_ramp_time = ramp_time, setup_time = 5)
 
 
+
+	# nanovm = init_nanovm_keithley(rm, max_voltage = 0.001, NPLC = 5)
+	# dvm = init_dvm(rm, max_voltage = 0.1, NPLC = 5)
+	# sorenson_psu = init_sorenson_psu(rm, max_voltage=10)
+
+
+	# ramp_sorenson_psu(sorenson_psu, 5, 225) #linear ramp up
+	# time.sleep(7+60)
+	# ramp_sorenson_psu(sorenson_psu, 5, 0) #linear ramp up
 
 	# run_IV_curve(rm, nanovm, dvm, sorenson_psu,	0, 350, 5, 'CORC_LSS_up_july29_V1TAP', disable_psu = False, safe_mode = False)
 	# time.sleep(2)
 	# run_IV_curve(rm, nanovm, dvm, sorenson_psu,	350, 0, -5, 'CORC_LSS_down_july29_V1TAP', disable_psu = True, safe_mode = False)
 
 
-	ramp_time = 5
-	quick_psu_ramp(rm, I_amps= 325, up_ramp_time = ramp_time, dwell_time = 60, down_ramp_time = ramp_time, setup_time = 10)
-
-
+	
 
 	#Fire Heater
 	# pulse_duration = 0.5 # seconds
 	# init_heater()
 	# fire_heater(pulse_duration)
 
-
-	
 
 
 	return
