@@ -73,10 +73,10 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 	#IV parameters
 	I_vec = np.arange(I_start, I_end + I_inc, I_inc)
 	V_sample_max = 2/1000 #Disable PSU if voltage exceeds this
-	t_settle = 3 #time to wait before recording voltage
-	t_plot = 1 #time to plot
-	inter_point_ramp_time = 2
-	first_point_ramp_time = 2
+	t_settle = 0.5 #time to wait before recording voltage
+	t_plot = 0.5 #time to plot
+	inter_point_ramp_time = 0.5
+	first_point_ramp_time = 0.5
 
 	#Create a folder for this result (see helper_functions)
 	dir_name = create_folder(test_code)
@@ -105,7 +105,8 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 
 	#Check starting point before telling power supply to ramp
 	time_array[0] = time.time()
-	I_shunt[0] = get_dvm(dvm)[1]
+	print('manually turned off shunt')
+	# I_shunt[0] = get_dvm(dvm)[1]
 	Vsample_1[0] = get_nanovm_keithley(nanovm, ch_num = 1)
 	# Vsample_2[0] = get_nanovm_keysight(nanovm, ch_num = 2)
 
@@ -140,7 +141,10 @@ def run_IV_curve(rm, nanovm, dvm, sorenson_psu,	I_start, I_end, I_inc, test_code
 
 		#Get voltages from meters
 		time_array[i] = time.time()
-		I_shunt[i] = get_dvm(dvm)[1]
+		# I_shunt[i] = get_dvm(dvm)[1]
+
+		print("WARNING - using set point as current NOT SHUNT")
+		I_shunt[i] = I_vec[i]
 		Vsample_1[i] = get_nanovm_keithley(nanovm, ch_num = 1)
 		# Vsample_2[i] = get_nanovm_keysight(nanovm, ch_num = 2)
 
