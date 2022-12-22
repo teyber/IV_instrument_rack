@@ -14,13 +14,13 @@ from measurement_routines import *
 def main():
 
 
+	top_control_IV_curve()
 
+	# rm = visa.ResourceManager()
+	# print(rm.list_resources())
 
-	rm = visa.ResourceManager()
-	print(rm.list_resources())
-
-	ramp_time = 5
-	quick_psu_ramp(rm, I_amps= 340, up_ramp_time = ramp_time, dwell_time = 2, down_ramp_time = ramp_time, setup_time = 5)
+	# ramp_time = 5
+	# quick_psu_ramp(rm, I_amps= 340, up_ramp_time = ramp_time, dwell_time = 2, down_ramp_time = ramp_time, setup_time = 5)
 
 
 
@@ -51,28 +51,14 @@ def main():
 
 
 
-def maxim_plot():
 
-	A = np.loadtxt('Results\\CORC_LSS_july22_save16\\CANCELLED_IV_curve_.txt')
-	print(np.shape(A))
-
-	plt.figure()
-	plt.plot(A[1,:], A[2,:])
-	plt.show()
-
-
-	return
-
-
-
-def top_control_IV_curve(rm):
+def GA_joint_IV_curve(rm):
 
 # #Run IV curve, measure both up and down ramps
 	test_code = 'corc_Bz_jan_20210'
 
 	#Initialize instruments
-	nanovm = init_nanovm_agilent(rm, max_voltage = 0.01, NPLC = 1)
-	dvm = init_dvm(rm, max_voltage = 0.1, NPLC = 0.1)
+
 	sorenson = init_sorenson_psu(rm, max_voltage = 3)
 
 	#Ramp up and down
