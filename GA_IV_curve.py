@@ -19,9 +19,9 @@ import pyvisa as visa
 
 def main():
 
-	# GA_IV_curve()
+	GA_IV_curve()
 
-	continuous_record()
+	# continuous_record()
 	# plot_GA_curve()
 	
 
@@ -32,72 +32,70 @@ def main():
 
 
 
-def continuous_record():
+# def continuous_record():
 
 
-	test_code = '2023_01_05_continuous_800A_run1'
-	dir_name = create_folder(test_code)
+# 	test_code = '2023_01_06_continuous_800A_run1'
+# 	dir_name = create_folder(test_code)
 
-	time_acquire = 25
-	fs = 20000 #sample frequency
-	num_samples = int(fs*time_acquire)
+# 	time_acquire = 25
+# 	fs = 20000 #sample frequency
+# 	num_samples = int(fs*time_acquire)
 
-	with nidaqmx.Task() as task:
+# 	with nidaqmx.Task() as task:
 		
-		#Sample voltages and current shunt
-		task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod1/ai0",max_val=0.5, min_val=-0.5)
-		task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod1/ai1",max_val=0.5, min_val=-0.5)
-		task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod1/ai2",max_val=0.5, min_val=-0.5)
-		task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod1/ai3",max_val=0.5, min_val=-0.5)
+# 		#Sample voltages and current shunt
+# 		task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod1/ai0",max_val=0.5, min_val=-0.5)
+# 		task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod1/ai1",max_val=0.5, min_val=-0.5)
+# 		task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod1/ai2",max_val=0.5, min_val=-0.5)
+# 		task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod1/ai3",max_val=0.5, min_val=-0.5)
 
-		task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod2/ai0",max_val=0.5, min_val=-0.5)
-		task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod2/ai1",max_val=0.5, min_val=-0.5)
+# 		task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod2/ai0",max_val=0.5, min_val=-0.5)
+# 		task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod2/ai1",max_val=0.5, min_val=-0.5)
 
-		task.timing.cfg_samp_clk_timing(rate=fs, sample_mode=nidaqmx.constants.AcquisitionType.FINITE, samps_per_chan=num_samples) # you may not need samps_per_chan
-
-
-		task.start()
-		value = task.read(number_of_samples_per_channel=num_samples, timeout=2*time_acquire)
-		task.stop()
-
-		mod1_ai0 = np.asarray(value[0])
-		mod1_ai1 = np.asarray(value[1])
-		mod1_ai2 = np.asarray(value[2])
-		mod1_ai3 = np.asarray(value[3])	
-
-		mod2_ai0 = np.asarray(value[4])
-		mod2_ai1 = np.asarray(value[5])
+# 		task.timing.cfg_samp_clk_timing(rate=fs, sample_mode=nidaqmx.constants.AcquisitionType.FINITE, samps_per_chan=num_samples) # you may not need samps_per_chan
 
 
-	Vs_GA1 = mod1_ai0
-	Vs_GA2 = mod1_ai1
-	Vs_CORE = mod1_ai2
-	Vs_OUTER = mod1_ai3
+# 		task.start()
+# 		value = task.read(number_of_samples_per_channel=num_samples, timeout=2*time_acquire)
+# 		task.stop()
 
-	Vs_INNER = mod2_ai0
-	V_shunt = mod2_ai1
-	I_shunt = V_shunt/0.00002497
+# 		mod1_ai0 = np.asarray(value[0])
+# 		mod1_ai1 = np.asarray(value[1])
+# 		mod1_ai2 = np.asarray(value[2])
+# 		mod1_ai3 = np.asarray(value[3])	
 
-
-	np.savetxt(Path(dir_name + '/Vs_GA1.txt'), Vs_GA1)
-	np.savetxt(Path(dir_name + '/Vs_GA2.txt'), Vs_GA2)
-	np.savetxt(Path(dir_name + '/Vs_CORE.txt'), Vs_CORE)
-	np.savetxt(Path(dir_name + '/Vs_OUTER.txt'), Vs_OUTER)
-	np.savetxt(Path(dir_name + '/Vs_INNER.txt'), Vs_INNER)
-	np.savetxt(Path(dir_name + '/I_shunt.txt'), I_shunt)
-
-	plt.figure()
-	plt.plot(Vs_GA1)
-	plt.show()
-
-	plt.figure()
-	plt.plot(Vs_CORE)
-	plt.show()
-
-	
+# 		mod2_ai0 = np.asarray(value[4])
+# 		mod2_ai1 = np.asarray(value[5])
 
 
-	return 
+# 	Vs_GA1 = mod1_ai0
+# 	Vs_GA2 = mod1_ai1
+# 	Vs_CORE = mod1_ai2
+# 	Vs_OUTER = mod1_ai3
+
+# 	Vs_INNER = mod2_ai0
+# 	V_shunt = mod2_ai1
+# 	I_shunt = V_shunt/0.00002497
+
+
+# 	np.savetxt(Path(dir_name + '/Vs_GA1.txt'), Vs_GA1)
+# 	np.savetxt(Path(dir_name + '/Vs_GA2.txt'), Vs_GA2)
+# 	np.savetxt(Path(dir_name + '/Vs_CORE.txt'), Vs_CORE)
+# 	np.savetxt(Path(dir_name + '/Vs_OUTER.txt'), Vs_OUTER)
+# 	np.savetxt(Path(dir_name + '/Vs_INNER.txt'), Vs_INNER)
+# 	np.savetxt(Path(dir_name + '/I_shunt.txt'), I_shunt)
+
+# 	plt.figure()
+# 	plt.plot(Vs_GA1)
+# 	plt.show()
+
+# 	plt.figure()
+# 	plt.plot(Vs_CORE)
+# 	plt.show()
+
+
+# 	return 
 
 
 
@@ -108,7 +106,8 @@ def continuous_record():
 
 def GA_IV_curve():
 
-	test_code = '2023_01_05_testramp_900A_run5'
+	test_code = '2023_01_06_thermal3_800A_run3'
+	# test_code = 'delete'
 
 	#Initialize power supply
 	rm = visa.ResourceManager('@py')
@@ -117,7 +116,7 @@ def GA_IV_curve():
 
 	#Ramp up and down
 	I_start = 0
-	I_end = 900
+	I_end = 800 # 800
 	dI = 10
 	
 
@@ -262,6 +261,8 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 
 
 	return dir_name
+
+
 
 
 
