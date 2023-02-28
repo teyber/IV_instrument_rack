@@ -106,7 +106,7 @@ def main():
 
 def GA_IV_curve():
 
-	test_code = '2023_01_06_thermal3_800A_run3'
+	test_code = '2023_02_16_thermal4_800A_run4'	
 	# test_code = 'delete'
 
 	#Initialize power supply
@@ -117,8 +117,8 @@ def GA_IV_curve():
 	#Ramp up and down
 	I_start = 0
 	I_end = 800 # 800
-	dI = 10
-	
+	dI = 10 #WAS
+
 
 	#Ramp up and down
 	dir_name_up = run_IV_curve(rm, SSTF_psu, I_start, I_end, dI, test_code) #ramp up
@@ -130,6 +130,7 @@ def GA_IV_curve():
 
 
 	return
+
 
 
 
@@ -276,8 +277,6 @@ def plot_GA_curve():
 	Vs_OUTER = np.loadtxt(Path(dir_name + '/Vs_OUTER.txt'))
 	Vs_INNER = np.loadtxt(Path(dir_name + '/Vs_INNER.txt'))
 	I_shunt = np.loadtxt(Path(dir_name + '/I_shunt.txt'))
-
-
 
 
 	fig = plt.figure(figsize=(8,6))
