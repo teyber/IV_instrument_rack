@@ -19,83 +19,70 @@ import pyvisa as visa
 
 def main():
 
-
-	# continuous_record()
 	# ACT_IV_curve()
-	# ramp_slow()
 
-	# turn_psu_off()
-
-
-	reed_test()
-	return
-
-
-
-
-def reed_test():
-
-	dir_name = 'Results/2023_03_16_SBIR2Phase_500A_HEATER_save6'
-
-	Vs_outerlayers = np.loadtxt(Path(dir_name + '/Vs_outerlayers.txt'))
-	Vs_innerlayers = np.loadtxt(Path(dir_name + '/Vs_innerlayers.txt'))
-	I_shunt = np.loadtxt(Path(dir_name + '/V_shunt.txt'))
-	V_heater = np.loadtxt(Path(dir_name + '/V_heater.txt'))
-	Vhall_ground_outerlayers = np.loadtxt(Path(dir_name + '/Vhall_ground_outerlayers.txt'))
-	Vhall_ground_innerlayers = np.loadtxt(Path(dir_name + '/Vhall_ground_innerlayers.txt'))
-	Vhall_pos_outerlayers = np.loadtxt(Path(dir_name + '/Vhall_pos_outerlayers.txt'))
-	Vhall_pos_innerlayers = np.loadtxt(Path(dir_name + '/Vhall_pos_innerlayers.txt'))
-
-	plt.figure()
-	plt.plot(Vhall_ground_outerlayers - Vhall_ground_outerlayers[0])
-	plt.plot(Vhall_ground_innerlayers - Vhall_ground_innerlayers[0])
-	plt.plot(Vhall_pos_outerlayers - Vhall_pos_outerlayers[0])
-	plt.plot(Vhall_pos_innerlayers - Vhall_pos_innerlayers[0])
-	plt.show()
-
-
-
-	return
-
-
-
-def turn_psu_off():
-
-	rm = visa.ResourceManager('@py')
-	SSTF_psu = init_SSTF_psu(rm)
-	set_SSTF_psu(SSTF_psu, 0)
+	# manual_quench()
 
 	return
 
 
 
 
-def ramp_slow():
+def manual_quench():
+
+	I_max = 560 #amps
+	time_acquire = 15 #seconds
+	test_code = '2023_04_10_SBIR2Phase_QUENCHDAY_' + str(int(I_max))+ 'A_realquench'
+	rm, SSTF_psu = ramp_slow(I_max)
+
+	print('COMPLETED RAMP - RECORDING STARTING SOON')
+
+	time.sleep(0.5)
+	continuous_record(test_code, time_acquire)
+	time.sleep(2)
+
+	#RAMP DOWNs
+	I_ramp_down = np.linspace(I_max, 0, 100)
+	for i in np.arange(np.size(I_ramp_down)):
+		print('ramp down current: ', I_ramp_down[i])
+		set_SSTF_psu(SSTF_psu, I_ramp_down[i])
+		time.sleep(0.2)
+
+
+	return
+
+
+
+
+
+
+
+
+def ramp_slow(I_end):
 
 	rm = visa.ResourceManager('@py')
 	SSTF_psu = init_SSTF_psu(rm)
 
-	I_end = 500
+	# I_end = 500
 	I_inc = 5
 	I_vec = np.arange(0, I_end + I_inc, I_inc)
 
 	for i in np.arange(np.size(I_vec)):
 
 		set_SSTF_psu(SSTF_psu, I_vec[i])
-		time.sleep(0.25)
+		time.sleep(0.1)
 
 
-	return
+	return rm, SSTF_psu
 
 
 
-def continuous_record():
+def continuous_record(test_code, time_acquire):
 
 
-	test_code = '2023_03_16_SBIR2Phase_500A_HEATER'
+	# test_code = '2023_03_16_SBIR2Phase_500A_HEATER'
 	dir_name = create_folder(test_code)
 
-	time_acquire = 10
 	fs = 1000 #sample frequency
 	num_samples = int(fs*time_acquire)
 
@@ -153,9 +140,9 @@ def continuous_record():
 	np.savetxt(Path(dir_name + '/Vhall_pos_innerlayers.txt'), Vhall_pos_innerlayers)
 
 	plt.figure()
-	ax1 = plt.subplot(2,1,1)
-	ax2 = plt.subplot(2,1,2)
-	
+	ax1 = plt.subplot(3,1,1)
+	ax2 = plt.subplot(3,1,2)
+	ax3 = plt.subplot(3,1,3)	
 
 	ax1.plot(Vs_outerlayers, 'orange')
 	ax1.plot(Vs_innerlayers, 'red')
@@ -165,9 +152,10 @@ def continuous_record():
 	ax2.plot(Vhall_pos_outerlayers, 'orange', label = 'Vhall_pos_outerlayers')
 	ax2.plot(Vhall_pos_innerlayers, 'red', label = 'Vhall_pos_innerlayers')
 
+	ax3.plot(V_heater)
+
 	ax1.legend(frameon=False)
 	ax2.legend(frameon=False)
-	plt.show()
 	plt.savefig(Path(dir_name + '/quench.pdf'))
 
 
@@ -182,7 +170,7 @@ def continuous_record():
 
 def ACT_IV_curve():
 
-	test_code = '2023_03_16_SBIR2Phase_protection_tests1'
+	test_code = '2023_04_10_SBIR2Phase_QUENCHDAY_560A_POSTQUENCH_IV'
 	# test_code = 'delete'
 
 	#Initialize power supply
@@ -191,11 +179,8 @@ def ACT_IV_curve():
 	SSTF_psu = init_SSTF_psu(rm)
 
 	#Ramp up and down
-	# I_start = 0
-	# I_end = 740 # 800
-	# dI = 20 #WAS
 	I_start = 0
-	I_end = 500 # 800
+	I_end = 560 # 800
 	dI = 5 #WAS
 
 
@@ -260,17 +245,17 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 	#Check starting point before telling power supply to ramp
 	time_array[0] = time.time()
 
-	Vs_outerlayers_i, Vs_innerlayers_i, I_shunt_i, V_heater_i, Vhall_ground_outerlayers_i, Vhall_ground_innerlayers_i, Vhall_pos_outerlayers_i, Vhall_pos_innerlayers_i  = get_cDAQ_8ch(t_record)
+	# Vs_outerlayers_i, Vs_innerlayers_i, I_shunt_i, V_heater_i, Vhall_ground_outerlayers_i, Vhall_ground_innerlayers_i, Vhall_pos_outerlayers_i, Vhall_pos_innerlayers_i  = get_cDAQ_8ch(t_record)
 
 
-	Vs_outerlayers[0] = Vs_outerlayers_i
-	Vs_innerlayers[0] = Vs_innerlayers_i
-	I_shunt[0] = I_shunt_i
-	V_heater[0] = V_heater_i
-	Vhall_ground_outerlayers[0] = Vhall_ground_outerlayers_i
-	Vhall_ground_innerlayers[0] = Vhall_ground_innerlayers_i
-	Vhall_pos_outerlayers[0] = Vhall_pos_outerlayers_i
-	Vhall_pos_innerlayers[0] = Vhall_pos_innerlayers_i
+	# Vs_outerlayers[0] = Vs_outerlayers_i
+	# Vs_innerlayers[0] = Vs_innerlayers_i
+	# I_shunt[0] = I_shunt_i
+	# V_heater[0] = V_heater_i
+	# Vhall_ground_outerlayers[0] = Vhall_ground_outerlayers_i
+	# Vhall_ground_innerlayers[0] = Vhall_ground_innerlayers_i
+	# Vhall_pos_outerlayers[0] = Vhall_pos_outerlayers_i
+	# Vhall_pos_innerlayers[0] = Vhall_pos_innerlayers_i
 
 	plt.close('all')
 
@@ -320,9 +305,6 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 
 		ax1.plot(I_shunt[0:(i+1)], Vs_outerlayers[0:(i+1)], 'orange', label = 'Vs_outerlayers')
 		ax1.plot(I_shunt[0:(i+1)], Vs_innerlayers[0:(i+1)], 'red', label = 'Vs_innerlayers')
-
-		# ax2.plot(I_shunt[0:(i+1)], Vhall_ground_outerlayers[0:(i+1)]/Vhall_ground_innerlayers[0:(i+1)], 'k', label = 'Vhall_ground_ratio')
-		# ax2.plot(I_shunt[0:(i+1)], Vhall_pos_outerlayers[0:(i+1)]/Vhall_pos_innerlayers[0:(i+1)], 'orange', label = 'Vhall_pos_ratio')
 
 		ax2.plot(I_shunt[0:(i+1)], Vhall_ground_outerlayers[0:(i+1)], 'k', label = 'Vhall_ground_outerlayers')
 		ax2.plot(I_shunt[0:(i+1)], Vhall_ground_innerlayers[0:(i+1)], 'grey', label = 'Vhall_ground_innerlayers')

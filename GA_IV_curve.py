@@ -19,12 +19,15 @@ import pyvisa as visa
 
 def main():
 
-	GA_IV_curve()
+	for i in np.arange(2):
+		GA_IV_curve()
 
-	# continuous_record()
-	# plot_GA_curve()
-	
 
+
+	# rm = visa.ResourceManager('@py')
+	# print(rm.list_resources())
+	# SSTF_psu = init_SSTF_psu(rm)
+	# set_SSTF_psu(SSTF_psu, 0)
 
 	return
 
@@ -106,8 +109,8 @@ def main():
 
 def GA_IV_curve():
 
-	test_code = '2023_02_16_thermal4_800A_run4'	
-	# test_code = 'delete'
+	test_code = '2023_05_05_assembly2_thermal10_1PSU_950A'	
+		
 
 	#Initialize power supply
 	rm = visa.ResourceManager('@py')
@@ -116,7 +119,7 @@ def GA_IV_curve():
 
 	#Ramp up and down
 	I_start = 0
-	I_end = 800 # 800
+	I_end = 950 # 800
 	dI = 10 #WAS
 
 
@@ -141,26 +144,26 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 
 	#IV parameters
 	I_vec = np.arange(I_start, I_end + I_inc, I_inc)
-	V_sample_max = 20/1000 #Disable PSU if voltage exceeds this
+	# V_sample_max = 20/1000 #Disable PSU if voltage exceeds this
 	t_settle = 1 #time to wait before recording voltage
-	t_plot = 0.5 #time to plot
+	t_plot = 0.75 #time to plot
 	t_record = 0.2 #time for NI dAQ to average
 
 	#Create a folder for this result (see helper_functions)
 	dir_name = create_folder(test_code)
 
-	# Ask user to double check current range before proceeding
-	print('------------ Safety check ------------')
-	print('Programmed current range [A]: ', I_vec)
-	print('Programmed voltage threshold [V], settle time [s]: ', V_sample_max, t_settle)
-	print('0 - Exit')		
-	print('1 - Energize systems')
-	current_warning = int(input('Is this correct? '))
+	# # Ask user to double check current range before proceeding
+	# print('------------ Safety check ------------')
+	# print('Programmed current range [A]: ', I_vec)
+	# print('Programmed settle time [s]: ', t_settle)
+	# print('0 - Exit')		
+	# print('1 - Energize systems')
+	# current_warning = int(input('Is this correct? '))
 	
-	if current_warning == 1: 
-		print('Continuing with IV curve - systems will be energized')
-	else: 
-		return dir_name
+	# if current_warning == 1: 
+	# 	print('Continuing with IV curve - systems will be energized')
+	# else: 
+	# 	return dir_name
 
 
 
@@ -173,11 +176,11 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 	Vs_OUTER = np.zeros(num_points)
 	Vs_INNER = np.zeros(num_points)
 	I_shunt = np.zeros(num_points)
-
+	I_shunt_slave = np.zeros(num_points)
 
 	#Check starting point before telling power supply to ramp
 	time_array[0] = time.time()
-	Vs_GA1_i, Vs_GA2_i, Vs_CORE_i, Vs_OUTER_i, Vs_INNER_i, I_shunt_i = get_cDAQ_8ch(t_record)
+	Vs_GA1_i, Vs_GA2_i, Vs_CORE_i, Vs_OUTER_i, Vs_INNER_i, I_shunt_i, I_shunt_slave_i = get_cDAQ_8ch(t_record)
 
 	Vs_GA1[0] = Vs_GA1_i
 	Vs_GA2[0] = Vs_GA2_i
@@ -185,7 +188,7 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 	Vs_OUTER[0] = Vs_OUTER_i
 	Vs_INNER[0] = Vs_INNER_i
 	I_shunt[0] = I_shunt_i
-
+	I_shunt_slave[0] = I_shunt_slave_i
 
 	plt.close('all')
 
@@ -200,7 +203,7 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 		#Get voltages from meters
 		time_array[i] = time.time()
 
-		Vs_GA1_i, Vs_GA2_i, Vs_CORE_i, Vs_OUTER_i, Vs_INNER_i, I_shunt_i = get_cDAQ_8ch(t_record)
+		Vs_GA1_i, Vs_GA2_i, Vs_CORE_i, Vs_OUTER_i, Vs_INNER_i, I_shunt_i, I_shunt_slave_i = get_cDAQ_8ch(t_record)
 
 		Vs_GA1[i] = Vs_GA1_i
 		Vs_GA2[i] = Vs_GA2_i
@@ -208,9 +211,9 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 		Vs_OUTER[i] = Vs_OUTER_i
 		Vs_INNER[i] = Vs_INNER_i
 		I_shunt[i] = I_shunt_i
+		I_shunt_slave[i] = I_shunt_slave_i
 
-
-		print("Programed, measured current: ", I_vec[i], I_shunt[i])
+		print("Programed, measured current: ", I_vec[i], I_shunt[i], I_shunt_slave[i])
 		print('Voltages: ', Vs_GA1_i, Vs_GA2_i, Vs_CORE_i, Vs_OUTER_i, Vs_INNER_i)
 
 		np.savetxt(Path(dir_name + '/time_array.txt'), time_array)	
@@ -222,7 +225,7 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 		np.savetxt(Path(dir_name + '/Vs_OUTER.txt'), Vs_OUTER)
 		np.savetxt(Path(dir_name + '/Vs_INNER.txt'), Vs_INNER)
 		np.savetxt(Path(dir_name + '/I_shunt.txt'), I_shunt)
-
+		np.savetxt(Path(dir_name + '/I_shunt_slave.txt'), I_shunt_slave)
 
 
 		#Plot curve, update y axis limits if needed
@@ -236,13 +239,21 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 		ax2.plot(I_shunt[0:(i+1)], 1000*Vs_OUTER[0:(i+1)], label = 'Vs_OUTER')
 		ax2.plot(I_shunt[0:(i+1)], 1000*Vs_INNER[0:(i+1)], label = 'Vs_INNER')
 
-		ax1.set_xlabel('I [A]')
-		ax2.set_xlabel('I [A]')		
+		ax1.set_xlabel('I1 ONLY [A]')
+		ax2.set_xlabel('I1 ONLY [A]')		
 		ax1.set_ylabel('V [mV]')
 		ax2.set_ylabel('V [mV]')		
 		ax1.legend(frameon=False)
 		ax2.legend(frameon=False)		
+
+		# ax2.set_ylim((-0.01, 4.75))
+
+		# if (I_vec[i]*2)<1410:
+		# 	plt.show(block=False)
+		# else:
+
 		plt.show(block=False)
+
 		plt.pause(t_plot)
 		plt.close()
 
@@ -255,7 +266,7 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 	ax.plot(I_shunt, 1000*Vs_CORE, label = 'Vs_CORE')
 	ax.plot(I_shunt, 1000*Vs_OUTER, label = 'Vs_OUTER')
 	ax.plot(I_shunt, 1000*Vs_INNER, label = 'Vs_INNER')
-	plt.xlabel('I [A]')
+	plt.xlabel('I1 [A]')
 	plt.ylabel('V [mV]')
 	plt.legend(frameon=False)
 	plt.savefig(Path(dir_name + '/measurement_plot.pdf'))
@@ -269,7 +280,8 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 
 def plot_GA_curve():
 
-	dir_name = 'Results/' + '2023_01_05_testramp_300A_save1'
+	dir_name = 'Results/' + '2023_04_12_assembly1.6_thermal5_BELLEVILLE_950A_save1'
+
 
 	Vs_GA1 = np.loadtxt(Path(dir_name + '/Vs_GA1.txt'))
 	Vs_GA2 = np.loadtxt(Path(dir_name + '/Vs_GA2.txt'))
@@ -343,9 +355,11 @@ def get_cDAQ_8ch(time_acquire):
 
 	Vs_INNER = np.mean(mod2_ai0)
 	V_shunt = np.mean(mod2_ai1)
+	V_shunt_slave = np.mean(mod2_ai2)
 	I_shunt = V_shunt/0.00002497
+	I_shunt_slave = V_shunt_slave/(0.1/1000) #second shunt - 100 mV = 1 kA
 
-	return Vs_GA1, Vs_GA2, Vs_CORE, Vs_OUTER, Vs_INNER, I_shunt
+	return Vs_GA1, Vs_GA2, Vs_CORE, Vs_OUTER, Vs_INNER, I_shunt, I_shunt_slave
 
 
 
