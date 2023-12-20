@@ -18,7 +18,12 @@ from nidaqmx import system
 
 def main():
 
-	get_cDAQ_16ch(time_acquire, clear_init_error=True)
+	get_cDAQ_16ch(time_acquire=1, clear_init_error=True)
+	
+	for i in np.arange(20):
+		Vs_GA1, Vs_GA2, Vs_CORE, Vs_OUTER, Vs_INNER, I_shunt = get_cDAQ_16ch(time_acquire=1, clear_init_error=False)
+
+
 
 	return
 
@@ -46,9 +51,6 @@ def get_cDAQ_16ch(time_acquire, clear_init_error):
 
 		except:
 	 		print("An exception occurred")
-
-
-
 
 	else:
 		#record as normal
@@ -106,6 +108,10 @@ def get_cDAQ_16ch(time_acquire, clear_init_error):
 			mod4_ai1 = np.asarray(value[13])
 			mod4_ai2 = np.asarray(value[14])
 			mod4_ai3 = np.asarray(value[15])
+
+		plt.figure()
+		plt.plot(mod1_ai0)
+		plt.show()
 
 		Vs_GA1 = np.mean(mod1_ai0)
 		Vs_GA2 = np.mean(mod1_ai1)
