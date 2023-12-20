@@ -106,7 +106,7 @@ def main():
 
 def GA_IV_curve():
 
-	test_code = '2023_01_06_thermal3_800A_run3'
+	test_code = '2023_01_06_thermal3_800A_run'
 	# test_code = 'delete'
 
 	#Initialize power supply
@@ -347,7 +347,6 @@ def get_cDAQ_8ch(time_acquire):
 	I_shunt = V_shunt/0.00002497
 
 	return Vs_GA1, Vs_GA2, Vs_CORE, Vs_OUTER, Vs_INNER, I_shunt
-
 
 
 
