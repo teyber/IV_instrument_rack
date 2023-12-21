@@ -19,10 +19,10 @@ import pyvisa as visa
 
 def main():
 
-	for i in np.arange(4):
-		GA_IV_curve()
+	# for i in np.arange(4):
+	# 	GA_IV_curve()
 
-	# get_cDAQ_16ch(0.1)
+	GA_IV_curve()
 
 	# rm = visa.ResourceManager('@py')
 	# print(rm.list_resources())
@@ -36,79 +36,10 @@ def main():
 
 
 
-# def continuous_record():
-
-
-# 	test_code = '2023_01_06_continuous_800A_run1'
-# 	dir_name = create_folder(test_code)
-
-# 	time_acquire = 25
-# 	fs = 20000 #sample frequency
-# 	num_samples = int(fs*time_acquire)
-
-# 	with nidaqmx.Task() as task:
-		
-# 		#Sample voltages and current shunt
-# 		task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod1/ai0",max_val=0.5, min_val=-0.5)
-# 		task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod1/ai1",max_val=0.5, min_val=-0.5)
-# 		task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod1/ai2",max_val=0.5, min_val=-0.5)
-# 		task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod1/ai3",max_val=0.5, min_val=-0.5)
-
-# 		task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod2/ai0",max_val=0.5, min_val=-0.5)
-# 		task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod2/ai1",max_val=0.5, min_val=-0.5)
-
-# 		task.timing.cfg_samp_clk_timing(rate=fs, sample_mode=nidaqmx.constants.AcquisitionType.FINITE, samps_per_chan=num_samples) # you may not need samps_per_chan
-
-
-# 		task.start()
-# 		value = task.read(number_of_samples_per_channel=num_samples, timeout=2*time_acquire)
-# 		task.stop()
-
-# 		mod1_ai0 = np.asarray(value[0])
-# 		mod1_ai1 = np.asarray(value[1])
-# 		mod1_ai2 = np.asarray(value[2])
-# 		mod1_ai3 = np.asarray(value[3])	
-
-# 		mod2_ai0 = np.asarray(value[4])
-# 		mod2_ai1 = np.asarray(value[5])
-
-
-# 	Vs_GA1 = mod1_ai0
-# 	Vs_GA2 = mod1_ai1
-# 	Vs_CORE = mod1_ai2
-# 	Vs_OUTER = mod1_ai3
-
-# 	Vs_INNER = mod2_ai0
-# 	V_shunt = mod2_ai1
-# 	I_shunt = V_shunt/0.00002497
-
-
-# 	np.savetxt(Path(dir_name + '/Vs_GA1.txt'), Vs_GA1)
-# 	np.savetxt(Path(dir_name + '/Vs_GA2.txt'), Vs_GA2)
-# 	np.savetxt(Path(dir_name + '/Vs_CORE.txt'), Vs_CORE)
-# 	np.savetxt(Path(dir_name + '/Vs_OUTER.txt'), Vs_OUTER)
-# 	np.savetxt(Path(dir_name + '/Vs_INNER.txt'), Vs_INNER)
-# 	np.savetxt(Path(dir_name + '/I_shunt.txt'), I_shunt)
-
-# 	plt.figure()
-# 	plt.plot(Vs_GA1)
-# 	plt.show()
-
-# 	plt.figure()
-# 	plt.plot(Vs_CORE)
-# 	plt.show()
-
-
-# 	return 
-
-
-
-
-
 
 def GA_IV_curve():
 
-	test_code = '2023_08_11_assembly5_thermal2_1PSU_950A'	
+	test_code = '2023_12_20_assembly5_thermal3_1PSU_900A'	
 		
 	#Initialize power supply
 	rm = visa.ResourceManager('@py')
@@ -117,7 +48,7 @@ def GA_IV_curve():
 
 	#Ramp up and down
 	I_start = 0
-	I_end = 950 # 950
+	I_end = 900 # 950 # 950
 	dI = 10 #WAS
 
 	#Ramp up and down
@@ -148,15 +79,15 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 	#Create a folder for this result (see helper_functions)
 	dir_name = create_folder(test_code)
 
-	# # Ask user to double check current range before proceeding
-	# print('------------ Safety check ------------')
-	# print('Programmed current range [A]: ', I_vec)
-	# print('0 - Exit')		
-	# print('1 - Energize systems')
-	# current_warning = int(input('Is this correct? '))
+	# Ask user to double check current range before proceeding
+	print('------------ Safety check ------------')
+	print('Programmed current range [A]: ', I_vec)
+	print('0 - Exit')		
+	print('1 - Energize systems')
+	current_warning = int(input('Is this correct? '))
 	
-	# if current_warning == 1: print('Continuing with IV curve - systems will be energized')
-	# else: return dir_name
+	if current_warning == 1: print('Continuing with IV curve - systems will be energized')
+	else: return dir_name
 
 
 	#Initialize vectors to be filled in IV curve
@@ -184,7 +115,7 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 
 	#Check starting point before telling power supply to ramp
 	time_array[0] = time.time()
-	Vs_GA1_i, Vs_GA2_i, Vs_CORE_i, Vs_OUTER_i, Vs_INNER_i, I_shunt_i, Vhall_A1_i, Vhall_A3_i, Vhall_A5_i, Vhall_A7_i, Vhall_B1_i, Vhall_B3_i, Vhall_B5_i, Vhall_B7_i = get_cDAQ_16ch(t_record) 
+	Vs_GA1_i, Vs_GA2_i, Vs_CORE_i, Vs_OUTER_i, Vs_INNER_i, I_shunt_i, Vhall_A1_i, Vhall_A3_i, Vhall_A5_i, Vhall_A7_i, Vhall_B1_i, Vhall_B3_i, Vhall_B5_i, Vhall_B7_i = get_cDAQ_16ch(t_record, clear_init_error = False) 
 
 	Vs_GA1[0] = Vs_GA1_i
 	Vs_GA2[0] = Vs_GA2_i
@@ -217,7 +148,7 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 		#Get voltages from meters
 		time_array[i] = time.time()
 
-		Vs_GA1_i, Vs_GA2_i, Vs_CORE_i, Vs_OUTER_i, Vs_INNER_i, I_shunt_i, Vhall_A1_i, Vhall_A3_i, Vhall_A5_i, Vhall_A7_i, Vhall_B1_i, Vhall_B3_i, Vhall_B5_i, Vhall_B7_i = get_cDAQ_16ch(t_record) 
+		Vs_GA1_i, Vs_GA2_i, Vs_CORE_i, Vs_OUTER_i, Vs_INNER_i, I_shunt_i, Vhall_A1_i, Vhall_A3_i, Vhall_A5_i, Vhall_A7_i, Vhall_B1_i, Vhall_B3_i, Vhall_B5_i, Vhall_B7_i = get_cDAQ_16ch(t_record,  clear_init_error = False) 
 
 		Vs_GA1[i] = Vs_GA1_i
 		Vs_GA2[i] = Vs_GA2_i
@@ -260,8 +191,6 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 		np.savetxt(Path(dir_name + '/Vhall_B7.txt'), Vhall_B7)
 
 
-
-
 		#Plot curve, update y axis limits if needed
 		fig = plt.figure(figsize=(8,6))
 		ax1 = plt.subplot(3,1,1)
@@ -273,8 +202,8 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 		ax1.plot(I_shunt[0:(i+1)], 1000*Vs_GA1[0:(i+1)], 'ko--', label = 'Vs_GA1')
 		ax1.plot(I_shunt[0:(i+1)], 1000*Vs_GA2[0:(i+1)], 'ro--', label = 'Vs_GA2')
 
-		ax2.plot(I_shunt[0:(i+1)], 1000*Vs_CORE[0:(i+1)], label = 'Vs_CORE')
-		ax2.plot(I_shunt[0:(i+1)], 1000*Vs_OUTER[0:(i+1)], label = 'Vs_OUTER')
+		# ax2.plot(I_shunt[0:(i+1)], 1000*Vs_CORE[0:(i+1)], label = 'Vs_CORE')
+		# ax2.plot(I_shunt[0:(i+1)], 1000*Vs_OUTER[0:(i+1)], label = 'Vs_OUTER')
 		ax2.plot(I_shunt[0:(i+1)], 1000*Vs_INNER[0:(i+1)], label = 'Vs_INNER')
 
 		ax3.plot(I_shunt[0:(i+1)], 1000*Vhall_A1[0:(i+1)], color=Hall_colors[0], ls = '-', label = 'A1')
@@ -288,7 +217,8 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 
 
 		ax1.set_xlabel('I1 ONLY [A]')
-		ax2.set_xlabel('I1 ONLY [A]')		
+		ax2.set_xlabel('I1 ONLY [A]')	
+		ax2.set_xlabel('I1 ONLY [A]')				
 		ax1.set_ylabel('V$_{sample}$ [mV]')
 		ax2.set_ylabel('V$_{sample}$ [mV]')		
 		ax3.set_ylabel('V$_{Hall}$ [mV]')	
@@ -297,7 +227,8 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 		ax2.legend(frameon=False)		
 		ax3.legend(frameon=False)	
 
-		ax2.set_ylim((-0.01, 4))
+		ax2.set_ylim((-6, 0.01))
+		# ax2.set_ylim((-0.01, 4))
 
 		# if (I_vec[i]*2)<1410:
 		# 	plt.show(block=False)
@@ -385,6 +316,8 @@ def get_cDAQ_16ch(time_acquire, clear_init_error):
 
 		except:
 	 		print("An exception occurred")
+	 	
+		return
 
 	else:
 		#record as normal
@@ -443,7 +376,22 @@ def get_cDAQ_16ch(time_acquire, clear_init_error):
 			mod4_ai2 = np.asarray(value[14])
 			mod4_ai3 = np.asarray(value[15])
 
-	
+		A_colors = plt.cm.jet(np.linspace(0.1,0.3,4))
+		B_colors = plt.cm.jet(np.linspace(0.7,0.9,4))	
+
+	# Debugging 
+	# plt.figure()
+	# plt.plot(mod3_ai0, color=A_colors[0])
+	# plt.plot(mod3_ai1, color=A_colors[1])
+	# plt.plot(mod3_ai2, color=A_colors[2])
+	# plt.plot(mod3_ai3, color=A_colors[3])
+	# plt.plot(mod4_ai0, color=B_colors[0])
+	# plt.plot(mod4_ai1, color=B_colors[1])
+	# plt.plot(mod4_ai2, color=B_colors[2])
+	# plt.plot(mod4_ai3, color=B_colors[3])
+	# plt.show()
+
+
 
 	Vs_GA1 = np.mean(mod1_ai0)
 	Vs_GA2 = np.mean(mod1_ai1)
@@ -468,7 +416,6 @@ def get_cDAQ_16ch(time_acquire, clear_init_error):
 	Vhall_B7 = np.mean(mod4_ai3)
 
 	return Vs_GA1, Vs_GA2, Vs_CORE, Vs_OUTER, Vs_INNER, I_shunt, Vhall_A1, Vhall_A3, Vhall_A5, Vhall_A7, Vhall_B1, Vhall_B3, Vhall_B5, Vhall_B7
-
 
 
 
@@ -502,8 +449,6 @@ def init_SSTF_psu(rm):
 
 
 
-
-
 def set_SSTF_psu(SSTF_psu, I_psu):
 
 	V_cmd = I_psu*(5/1000) #Volts to power supply
@@ -512,8 +457,6 @@ def set_SSTF_psu(SSTF_psu, I_psu):
 	time.sleep(0.1)	
 
 	return
-
-
 
 
 
