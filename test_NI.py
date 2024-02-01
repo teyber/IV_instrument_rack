@@ -18,10 +18,10 @@ from nidaqmx import system
 
 def main():
 
-	get_cDAQ_16ch(time_acquire=1, clear_init_error=True)
+	# get_cDAQ_16ch(time_acquire=1, clear_init_error=True)
 	
-	for i in np.arange(20):
-		Vs_GA1, Vs_GA2, Vs_CORE, Vs_OUTER, Vs_INNER, I_shunt = get_cDAQ_16ch(time_acquire=1, clear_init_error=False)
+	# for i in np.arange(20):
+	# 	Vs_GA1, Vs_GA2, Vs_CORE, Vs_OUTER, Vs_INNER, I_shunt = get_cDAQ_16ch(time_acquire=1, clear_init_error=False)
 
 
 

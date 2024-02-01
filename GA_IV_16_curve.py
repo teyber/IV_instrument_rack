@@ -29,6 +29,10 @@ def main():
 	# SSTF_psu = init_SSTF_psu(rm)
 	# set_SSTF_psu(SSTF_psu, 0)
 
+	# t_record = 0.1
+	# get_cDAQ_16ch(t_record, clear_init_error = True)
+	# print(get_cDAQ_16ch(t_record, clear_init_error = False))
+
 
 	return
 
@@ -39,7 +43,7 @@ def main():
 
 def GA_IV_curve():
 
-	test_code = '2023_12_20_assembly5_thermal3_1PSU_900A'	
+	test_code = '2024_02_01_assembly5_thermal4_1PSU_900A'	
 		
 	#Initialize power supply
 	rm = visa.ResourceManager('@py')
@@ -48,7 +52,7 @@ def GA_IV_curve():
 
 	#Ramp up and down
 	I_start = 0
-	I_end = 900 # 950 # 950
+	I_end = 900 # 900 (probably try lower current for safety)
 	dI = 10 #WAS
 
 	#Ramp up and down
@@ -248,6 +252,7 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 	ax.plot(I_shunt, 1000*Vs_CORE, label = 'Vs_CORE')
 	ax.plot(I_shunt, 1000*Vs_OUTER, label = 'Vs_OUTER')
 	ax.plot(I_shunt, 1000*Vs_INNER, label = 'Vs_INNER')
+	ax.set_ylim((-0.01, 5))
 	plt.xlabel('I1 [A]')
 	plt.ylabel('V [mV]')
 	plt.legend(frameon=False)
@@ -431,12 +436,28 @@ def init_SSTF_psu(rm):
 	time.sleep(0.1)
 	print(SSTF_psu.read())
 
+	print('NEW ANALOG CARD WITH NEW SLOPES')
+
+	#Xiaorong Email
+	# The new box, 4861B, is set to output a voltage between +/- 5 V. We also updated the VI configuration file with the following commands to communicate with 4861B. 
+	# - B 4.999, set the offset to -0.001 V. This command, together with D 0, sends a control voltage of -0.001 V to the power supplies when the power supplies are expected to output 0 A. Command for 4861A: B 4.995. 
+	# - M 1.0, set the slope to 1. Command for 4861A: M 0.5, which may indicate that the output range for 4861A was set to +/- 10 V.
+
+	# The following commands remain the same as those for 4861A.
+	# - D 0, set the output to 0 V during the initialization. 
+	# - L 5, set the output limit to 5 V. 
+	# More details on the commands for 4861b can be found here. 
+
+
+
 	time.sleep(0.1)
 	SSTF_psu.write('inst 1')
 	time.sleep(0.1)
-	SSTF_psu.write('b4.995')
+	# SSTF_psu.write('b4.995')
+	SSTF_psu.write('b4.999')
 	time.sleep(0.1)
-	SSTF_psu.write('m0.5')
+	# SSTF_psu.write('m0.5')
+	SSTF_psu.write('m1.0')
 	time.sleep(0.1)
 	SSTF_psu.write('l5')
 	time.sleep(0.1)
