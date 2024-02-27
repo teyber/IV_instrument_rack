@@ -89,7 +89,19 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 	#Initialize vectors to be filled in IV curve
 	num_points = np.size(I_vec)
 	time_array = np.zeros(num_points)
-	Vs = np.zeros(num_points)
+	L0_T0 = np.zeros(num_points)
+	L0_T1 = np.zeros(num_points)
+	L0_T2 = np.zeros(num_points)
+	L1_T0 = np.zeros(num_points)
+	L1_T1 = np.zeros(num_points)
+	L1_T2 = np.zeros(num_points)
+	L2_T0 = np.zeros(num_points)
+	L2_T1 = np.zeros(num_points)
+	L2_T2 = np.zeros(num_points)
+	L3_T0 = np.zeros(num_points)
+	L3_T1 = np.zeros(num_points)
+	L3_T2 = np.zeros(num_points)
+	L4_T0_CORE = np.zeros(num_points)
 	I_shunt = np.zeros(num_points)
 
 
@@ -100,7 +112,24 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 
 	#Check starting point before telling power supply to ramp
 	time_array[0] = time.time()
-	Vs_i, I_shunt_i = get_cDAQ_2ch(t_record, clear_init_error = False) 
+	I_shunt_i, L0_T0_i, L0_T1_i, L0_T2_i, L1_T0_i, L1_T1_i, L1_T2_i, L2_T0_i, L2_T1_i, L2_T2_i, L3_T0_i, L3_T1_i, L3_T2_i, L4_T0_CORE_i = get_cDAQ_14ch(t_record, clear_init_error = False) 
+
+
+	L0_T0[0] = np.zeros(num_points)
+	L0_T1[0] = np.zeros(num_points)
+	L0_T2 = np.zeros(num_points)
+	L1_T0 = np.zeros(num_points)
+	L1_T1 = np.zeros(num_points)
+	L1_T2 = np.zeros(num_points)
+	L2_T0 = np.zeros(num_points)
+	L2_T1 = np.zeros(num_points)
+	L2_T2 = np.zeros(num_points)
+	L3_T0 = np.zeros(num_points)
+	L3_T1 = np.zeros(num_points)
+	L3_T2 = np.zeros(num_points)
+	L4_T0_CORE = np.zeros(num_points)
+	I_shunt = np.zeros(num_points)
+
 
 	Vs[0] = Vs_i
 	I_shunt[0] = I_shunt_i
@@ -118,7 +147,7 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 		#Get voltages from meters
 		time_array[i] = time.time()
 
-		Vs_i, I_shunt_i, = get_cDAQ_2ch(t_record,  clear_init_error = False) 
+		Vs_i, I_shunt_i, = get_cDAQ_14ch(t_record,  clear_init_error = False) 
 
 		Vs[i] = Vs_i
 		I_shunt[i] = I_shunt_i
@@ -173,7 +202,7 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 
 
 #Function for differentially measuring all 5 channels of ADS1262. Returns voltages in microvolts
-def get_cDAQ_2ch(time_acquire, clear_init_error):
+def get_cDAQ_14ch(time_acquire, clear_init_error):
 
 	if clear_init_error == True:
 		#Having a very strange error where the CDAQ / 9238 cards need to have the timing changed to not have an error
@@ -222,8 +251,7 @@ def get_cDAQ_2ch(time_acquire, clear_init_error):
 
 			task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod4/ai0",max_val=0.5, min_val=-0.5)
 			task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod4/ai1",max_val=0.5, min_val=-0.5)
-			task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod4/ai2",max_val=0.5, min_val=-0.5)
-			task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod4/ai3",max_val=0.5, min_val=-0.5)
+
 
 			task.timing.cfg_samp_clk_timing(rate=fs, sample_mode=nidaqmx.constants.AcquisitionType.FINITE, samps_per_chan=num_samples) # you may not need samps_per_chan
 
@@ -234,13 +262,45 @@ def get_cDAQ_2ch(time_acquire, clear_init_error):
 
 			mod1_ai0 = np.asarray(value[0])
 			mod1_ai1 = np.asarray(value[1])
+			mod1_ai2 = np.asarray(value[2])
+			mod1_ai3 = np.asarray(value[3])
 
+			mod2_ai0 = np.asarray(value[4])
+			mod2_ai1 = np.asarray(value[5])
+			mod2_ai2 = np.asarray(value[6])
+			mod2_ai3 = np.asarray(value[7])
 
-	Vs = np.mean(mod1_ai0)
-	V_shunt = np.mean(mod1_ai1)
+			mod3_ai0 = np.asarray(value[8])
+			mod3_ai1 = np.asarray(value[9])
+			mod3_ai2 = np.asarray(value[10])
+			mod3_ai3 = np.asarray(value[11])
+
+			mod4_ai0 = np.asarray(value[12])
+			mod4_ai1 = np.asarray(value[13])
+			# mod4_ai2 = np.asarray(value[14])
+			# mod4_ai3 = np.asarray(value[15])
+
+	L0_T0 = np.mean(mod1_ai0)
+	L0_T1 = np.mean(mod1_ai1)
+	L0_T2 = np.mean(mod1_ai2)
+	L1_T0 = np.mean(mod1_ai3)
+
+	L1_T1 = np.mean(mod2_ai0)
+	L1_T2 = np.mean(mod2_ai1)
+	L2_T0 = np.mean(mod2_ai2)
+	L2_T1 = np.mean(mod2_ai3)
+
+	L2_T2 = np.mean(mod3_ai0)
+	L3_T0 = np.mean(mod3_ai1)
+	L3_T1 = np.mean(mod3_ai2)
+	L3_T2 = np.mean(mod3_ai3)
+
+	L4_T0_CORE = np.mean(mod4_ai0)
+	V_shunt = np.mean(mod4_ai1)
+
 	I_shunt = V_shunt/0.00002497
 
-	return Vs, I_shunt
+	return I_shunt, L0_T0, L0_T1, L0_T2, L1_T0, L1_T1, L1_T2, L2_T0, L2_T1, L2_T2, L3_T0, L3_T1, L3_T2, L4_T0_CORE
 
 
 
