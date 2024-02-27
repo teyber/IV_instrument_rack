@@ -35,7 +35,7 @@ def main():
 
 def LLOFES_IV_curve():
 
-	test_code = '2024_02_15_40A_neg-IL2_pos-OL1'	
+	test_code = '2024_02_27_40A_neg-IL2_pos-OL1'	
 		
 	#Initialize power supply
 	rm = visa.ResourceManager('@py')
@@ -105,9 +105,8 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 	I_shunt = np.zeros(num_points)
 
 
-
 	#Clear the error that happens with the CDAQ
-	get_cDAQ_2ch(t_record, clear_init_error = True)
+	get_cDAQ_14ch(t_record, clear_init_error = True)
 
 
 	#Check starting point before telling power supply to ramp
@@ -115,20 +114,20 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 	I_shunt_i, L0_T0_i, L0_T1_i, L0_T2_i, L1_T0_i, L1_T1_i, L1_T2_i, L2_T0_i, L2_T1_i, L2_T2_i, L3_T0_i, L3_T1_i, L3_T2_i, L4_T0_CORE_i = get_cDAQ_14ch(t_record, clear_init_error = False) 
 
 
-	L0_T0[0] = np.zeros(num_points)
-	L0_T1[0] = np.zeros(num_points)
-	L0_T2 = np.zeros(num_points)
-	L1_T0 = np.zeros(num_points)
-	L1_T1 = np.zeros(num_points)
-	L1_T2 = np.zeros(num_points)
-	L2_T0 = np.zeros(num_points)
-	L2_T1 = np.zeros(num_points)
-	L2_T2 = np.zeros(num_points)
-	L3_T0 = np.zeros(num_points)
-	L3_T1 = np.zeros(num_points)
-	L3_T2 = np.zeros(num_points)
-	L4_T0_CORE = np.zeros(num_points)
-	I_shunt = np.zeros(num_points)
+	L0_T0[0] = L0_T0_i
+	L0_T1[0] = L0_T1_i
+	L0_T2[0] = L0_T2_i
+	L1_T0[0] = L1_T0_i
+	L1_T1[0] = L1_T1_i
+	L1_T2[0] = L1_T2_i
+	L2_T0[0] = L2_T0_i
+	L2_T1[0] = L2_T1_i
+	L2_T2[0] = L2_T2_i
+	L3_T0[0] = L3_T0_i
+	L3_T1[0] = L3_T1_i
+	L3_T2[0] = L3_T2_i
+	L4_T0_CORE[0] = L4_T0_CORE_i
+	I_shunt[0] = I_shunt_i
 
 
 	Vs[0] = Vs_i
@@ -147,49 +146,77 @@ def run_IV_curve(rm, SSTF_psu, I_start, I_end, I_inc, test_code):
 		#Get voltages from meters
 		time_array[i] = time.time()
 
-		Vs_i, I_shunt_i, = get_cDAQ_14ch(t_record,  clear_init_error = False) 
+		I_shunt_i, L0_T0_i, L0_T1_i, L0_T2_i, L1_T0_i, L1_T1_i, L1_T2_i, L2_T0_i, L2_T1_i, L2_T2_i, L3_T0_i, L3_T1_i, L3_T2_i, L4_T0_CORE_i = get_cDAQ_14ch(t_record, clear_init_error = False) 
 
-		Vs[i] = Vs_i
+		L0_T0[i] = L0_T0_i
+		L0_T1[i] = L0_T1_i
+		L0_T2[i] = L0_T2_i
+		L1_T0[i] = L1_T0_i
+		L1_T1[i] = L1_T1_i
+		L1_T2[i] = L1_T2_i
+		L2_T0[i] = L2_T0_i
+		L2_T1[i] = L2_T1_i
+		L2_T2[i] = L2_T2_i
+		L3_T0[i] = L3_T0_i
+		L3_T1[i] = L3_T1_i
+		L3_T2[i] = L3_T2_i
+		L4_T0_CORE[i] = L4_T0_CORE_i
 		I_shunt[i] = I_shunt_i
 
-
-
 		print("Programed, measured current: ", I_vec[i], I_shunt[i])
-		print('Voltages: ', Vs_i)
 
 		np.savetxt(Path(dir_name + '/time_array.txt'), time_array)	
 		np.savetxt(Path(dir_name + '/I_vec.txt'), I_vec)	
 
-		np.savetxt(Path(dir_name + '/Vs.txt'), Vs)
+		np.savetxt(Path(dir_name + '/L0_T0.txt'), L0_T0)	
+		np.savetxt(Path(dir_name + '/L0_T1.txt'), L0_T1)	
+		np.savetxt(Path(dir_name + '/L0_T2.txt'), L0_T2)
+
+		np.savetxt(Path(dir_name + '/L1_T0.txt'), L1_T0)	
+		np.savetxt(Path(dir_name + '/L1_T1.txt'), L1_T1)	
+		np.savetxt(Path(dir_name + '/L1_T2.txt'), L1_T2)
+
+		np.savetxt(Path(dir_name + '/L2_T0.txt'), L2_T0)	
+		np.savetxt(Path(dir_name + '/L2_T1.txt'), L2_T1)	
+		np.savetxt(Path(dir_name + '/L2_T2.txt'), L2_T2)
+
+		np.savetxt(Path(dir_name + '/L3_T0.txt'), L3_T0)	
+		np.savetxt(Path(dir_name + '/L3_T1.txt'), L3_T1)	
+		np.savetxt(Path(dir_name + '/L3_T2.txt'), L3_T2)
+
 		
 
 		#Plot curve, update y axis limits if needed
+		plot_color = plt.cm.jet(np.linspace(0.1,0.9, 12))
 		fig = plt.figure(figsize=(8,6))
 		ax1 = plt.subplot(1,1,1)
 
-		ax1.plot(I_shunt[0:(i+1)], 1000*Vs[0:(i+1)], 'ko--')
+		ax1.plot(I_shunt[0:(i+1)], 1000*L0_T0[0:(i+1)], color=plot_color[0])
+		ax1.plot(I_shunt[0:(i+1)], 1000*L0_T1[0:(i+1)], color=plot_color[1])
+		ax1.plot(I_shunt[0:(i+1)], 1000*L0_T2[0:(i+1)], color=plot_color[2])
 
-		ax1.set_xlabel('I1 ONLY [A]')			
+		ax1.plot(I_shunt[0:(i+1)], 1000*L1_T0[0:(i+1)], color=plot_color[3])
+		ax1.plot(I_shunt[0:(i+1)], 1000*L1_T1[0:(i+1)], color=plot_color[4])
+		ax1.plot(I_shunt[0:(i+1)], 1000*L1_T2[0:(i+1)], color=plot_color[5])
+
+		ax1.plot(I_shunt[0:(i+1)], 1000*L2_T0[0:(i+1)], color=plot_color[6])
+		ax1.plot(I_shunt[0:(i+1)], 1000*L2_T1[0:(i+1)], color=plot_color[7])
+		ax1.plot(I_shunt[0:(i+1)], 1000*L2_T2[0:(i+1)], color=plot_color[8])
+
+		ax1.plot(I_shunt[0:(i+1)], 1000*L3_T0[0:(i+1)], color=plot_color[9])
+		ax1.plot(I_shunt[0:(i+1)], 1000*L3_T1[0:(i+1)], color=plot_color[10])
+		ax1.plot(I_shunt[0:(i+1)], 1000*L3_T2[0:(i+1)], color=plot_color[11])
+
+		ax1.plot(I_shunt[0:(i+1)], 1000*L4_T_CORE[0:(i+1)], color=plot_color[12])
+
+
+		ax1.set_xlabel('I1 [A]')			
 		ax1.set_ylabel('V$_{sample}$ [mV]')
-
-		# if (I_vec[i]*2)<1410:
-		# 	plt.show(block=False)
-		# else:
 
 		plt.show(block=False)
 
 		plt.pause(t_plot)
 		plt.close()
-
-
-
-	fig = plt.figure(figsize=(8,6))
-	ax = plt.subplot(1,1,1)
-	ax.plot(I_shunt, 1000*Vs)
-	plt.xlabel('I1 [A]')
-	plt.ylabel('V [mV]')
-	plt.legend(frameon=False)
-	plt.savefig(Path(dir_name + '/measurement_plot.pdf'))
 
 
 	return dir_name
