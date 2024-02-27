@@ -207,6 +207,23 @@ def get_cDAQ_2ch(time_acquire, clear_init_error):
 			#Sample voltages and current shunt
 			task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod1/ai0",max_val=0.5, min_val=-0.5)
 			task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod1/ai1",max_val=0.5, min_val=-0.5)
+			task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod1/ai2",max_val=0.5, min_val=-0.5)
+			task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod1/ai3",max_val=0.5, min_val=-0.5)
+
+			task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod2/ai0",max_val=0.5, min_val=-0.5)
+			task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod2/ai1",max_val=0.5, min_val=-0.5)
+			task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod2/ai2",max_val=0.5, min_val=-0.5)
+			task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod2/ai3",max_val=0.5, min_val=-0.5)
+
+			task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod3/ai0",max_val=0.5, min_val=-0.5)
+			task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod3/ai1",max_val=0.5, min_val=-0.5)
+			task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod3/ai2",max_val=0.5, min_val=-0.5)
+			task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod3/ai3",max_val=0.5, min_val=-0.5)
+
+			task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod4/ai0",max_val=0.5, min_val=-0.5)
+			task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod4/ai1",max_val=0.5, min_val=-0.5)
+			task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod4/ai2",max_val=0.5, min_val=-0.5)
+			task.ai_channels.add_ai_voltage_chan(physical_channel="cDAQ1Mod4/ai3",max_val=0.5, min_val=-0.5)
 
 			task.timing.cfg_samp_clk_timing(rate=fs, sample_mode=nidaqmx.constants.AcquisitionType.FINITE, samps_per_chan=num_samples) # you may not need samps_per_chan
 
